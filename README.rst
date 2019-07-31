@@ -73,13 +73,14 @@ Fetch raw crash data using supersearch command to generate crash ids::
         fetch-data --raw --no-dumps --no-processed crashdir
 
 
+
 API token
 =========
 
 You need to use a API token to:
 
-* download data containing personally identifiable information,
-* download security sensitive data,
+* download data containing personally identifiable information
+* download security sensitive data
 * get out from the shadow of extreme API use rate limiting
 
 If you have access, you can generate an API token here:
@@ -88,6 +89,11 @@ https://crash-stats.mozilla.org/api/tokens/
 
 Once you have acquired one, set the ``CRASHSTATS_API_TOKEN`` environment
 variable when using crashstats-tools commands.
+
+Remember to abide by the data access policy when using data from Crash Stats!
+The policy is specified here:
+
+https://crash-stats.mozilla.org/documentation/memory_dump_access/
 
 
 Use cases

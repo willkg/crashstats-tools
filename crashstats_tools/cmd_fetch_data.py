@@ -38,6 +38,10 @@ To create an API token for Crash Stats, visit:
 
     https://crash-stats.mozilla.org/api/tokens/
 
+Remember to abide by the data access policy when using data from Crash Stats!
+The policy is specified here:
+
+https://crash-stats.mozilla.org/documentation/memory_dump_access/
 """
 
 

@@ -51,6 +51,10 @@ https://crash-stats.mozilla.org/documentation/supersearch/
 
 https://crash-stats.mozilla.org/documentation/supersearch/api/
 
+Remember to abide by the data access policy when using data from Crash Stats!
+The policy is specified here:
+
+https://crash-stats.mozilla.org/documentation/memory_dump_access/
 """
 
 MAX_PAGE = 1000
