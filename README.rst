@@ -42,11 +42,13 @@ Fetch 57 crash ids that match a Super Search query::
 Fetch uuid, product, version, and build_id for crash reports that have "OOM" in
 the signature::
 
-    $ supersearch --_columns=uuid --_columns=product --_columns=version --_columns=build_id --signature="~OOM"
+    $ supersearch --_columns=uuid --_columns=product --_columns=version \
+        --_columns=build_id --signature="~OOM"
 
-Results are tab-delimited. Tabs and newlines in output is escaped.
+Results are formatted as tab-delimited by default. JSON output is also
+available.
 
-Note that this doesn't do aggregations.
+Note that this doesn't support Super Search aggregations.
 
 See Super Search API details:
 
@@ -67,7 +69,8 @@ Fetch processed crash data for specific crash id::
 
 Fetch raw crash data using supersearch command to generate crash ids::
 
-    $ supersearch --product=Firefox --num=10 | fetch-data --raw --no-dumps --no-processed crashdir
+    $ supersearch --product=Firefox --num=10 | \
+        fetch-data --raw --no-dumps --no-processed crashdir
 
 
 API token
