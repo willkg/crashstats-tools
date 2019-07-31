@@ -240,13 +240,9 @@ def session_with_retries(
     return session
 
 
-class CrashDoesNotExist(Exception):
-    """Requested crash report does not exist."""
-    pass
-
-
 class BadAPIToken(Exception):
     """API Token is not valid."""
+
     pass
 
 
@@ -268,9 +264,7 @@ def http_get(url, params, api_token=None):
 
     resp = session.get(url, params=params, headers=headers)
 
-    # Handle 404 and 403 so we can provide the user more context
-    if resp.status_code == 404:
-        raise CrashDoesNotExist()
+    # Handle 403 so we can provide the user more context
     if api_token and resp.status_code == 403:
         raise BadAPIToken(resp.json().get("error", "No error provided"))
 

@@ -5,14 +5,15 @@
 import argparse
 import json
 import logging
+import os
 from urllib.parse import urlparse, parse_qs
 
 
 from crashstats_tools.utils import (
     DEFAULT_HOST,
+    http_get,
     INFINITY,
     parse_args,
-    session_with_retries,
     WrappedTextHelpFormatter,
 )
 
@@ -51,6 +52,17 @@ https://crash-stats.mozilla.org/documentation/supersearch/
 
 https://crash-stats.mozilla.org/documentation/supersearch/api/
 
+This requires an API token in order to download search and download personally
+identifiable information and security-sensitive data. It also reduces
+rate-limiting.  Set the CRASHSTATS_API_TOKEN environment variable to your API
+token value:
+
+    CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
+
+To create an API token for Crash Stats, visit:
+
+    https://crash-stats.mozilla.org/api/tokens/
+
 Remember to abide by the data access policy when using data from Crash Stats!
 The policy is specified here:
 
@@ -60,11 +72,7 @@ https://crash-stats.mozilla.org/documentation/memory_dump_access/
 MAX_PAGE = 1000
 
 
-TO_CLEAN = [
-    ("\t", "\\t"),
-    ("\r", "\\r"),
-    ("\n", "\\n"),
-]
+TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
 
 
 def clean_whitespace(text):
@@ -75,20 +83,19 @@ def clean_whitespace(text):
     return text
 
 
-def fetch_supersearch(host, params, num_results, verbose=False):
+def fetch_supersearch(host, params, num_results, api_token=None, verbose=False):
     """Generator that returns Super Search results
 
     :arg str host: the host to query
     :arg dict params: dict of super search parameters to base the query on
     :arg varies num: number of results to get or INFINITY
+    :arg str api_token: the API token to use or None
     :arg bool verbose: whether or not to print verbose things
 
     :returns: generator of crash ids
 
     """
     url = host + "/api/SuperSearch/"
-
-    session = session_with_retries()
 
     # Set up first page
     params["_results_offset"] = 0
@@ -101,10 +108,7 @@ def fetch_supersearch(host, params, num_results, verbose=False):
         if verbose:
             print(url, params)
 
-        resp = session.get(url, params=params)
-        if resp.status_code != 200:
-            raise Exception("Bad response: %s %s" % (resp.status_code, resp.content))
-
+        resp = http_get(url=url, params=params, api_token=api_token)
         hits = resp.json()["hits"]
 
         for hit in hits:
@@ -153,17 +157,16 @@ def main(argv=None):
     parser.add_argument(
         "--host", default=DEFAULT_HOST, help="host for system to fetch crashids from"
     )
-    parser.add_argument("--supersearch-url", default="", help="Super Search url to base query on")
+    parser.add_argument(
+        "--supersearch-url", default="", help="Super Search url to base query on"
+    )
     parser.add_argument(
         "--num",
         default=100,
         help='number of crash ids you want or "all" for all of them',
     )
     parser.add_argument(
-        "--format",
-        default="tab",
-        choices=["tab", "json"],
-        help="format for output"
+        "--format", default="tab", choices=["tab", "json"], help="format for output"
     )
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="increase verbosity of output"
@@ -206,9 +209,25 @@ def main(argv=None):
     if args.verbose:
         print("Params: %s" % params)
 
-    for hit in fetch_supersearch(host, params, num_results, verbose=args.verbose):
+    # Sort out API token existence
+    api_token = os.environ.get("CRASHSTATS_API_TOKEN")
+    if args.verbose:
+        if api_token:
+            print("Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4)))
+        else:
+            print(
+                "No api token provided. Skipping dumps and personally identifiable information."
+            )
+
+    for hit in fetch_supersearch(
+        host, params, num_results, api_token=api_token, verbose=args.verbose
+    ):
         if args.format == "tab":
-            print("\t".join([clean_whitespace(hit[field]) for field in params['_columns']]))
+            print(
+                "\t".join(
+                    [clean_whitespace(hit[field]) for field in params["_columns"]]
+                )
+            )
         elif args.format == "json":
             print(json.dumps(hit))
 
