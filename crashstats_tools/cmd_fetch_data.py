@@ -80,7 +80,7 @@ def fetch_crash(
         fn = os.path.join(outputdir, "dump_names", crash_id)
         create_dir_if_needed(os.path.dirname(fn))
         with open(fn, "w") as fp:
-            json.dump(dump_names, fp)
+            json.dump(list(dump_names), fp)
 
         # Fetch dumps
         for dump_name in dump_names:
