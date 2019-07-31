@@ -195,6 +195,11 @@ def main(argv=None):
     if "_columns" not in params:
         params["_columns"] = ["uuid"]
 
+    if "_sort" not in params and "date" not in params:
+        # If _sort and date aren't in params, then we're going to assume the
+        # user wants the most recent crash reports.
+        params["_sort"] = ["-date"]
+
     num_results = args.num
     if num_results == "all":
         num_results = INFINITY
