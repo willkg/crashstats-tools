@@ -1,0 +1,7 @@
+-e .
+
+black
+check-manifest
+flake8
+twine
+wheel

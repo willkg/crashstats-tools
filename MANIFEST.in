@@ -1,0 +1,10 @@
+include LICENSE
+include README.rst
+include HISTORY.rst
+include requirements-dev.txt
+include tox.ini
+
+recursive-include bin *.sh
+recursive-include crashstats_tools *.rst
+recursive-include crashstats_tools *.txt
+
