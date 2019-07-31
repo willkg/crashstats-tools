@@ -23,6 +23,14 @@ with::
     $ pip install crashstats-tools
 
 
+Support
+=======
+
+This is an alpha-quality project that I spent some time on because it seemed
+helpful. If you have any problems, please write up an issue in the issue
+tracker and I'll get to it when I'm able.
+
+
 Tools
 =====
 
@@ -161,6 +169,18 @@ I would do this::
     $ supersearch --date=">=2019-07-30" --date="<2019-07-31" --dom_fission_enabled="!__null__"
 
 
+Prior art and related projects
+==============================
+
+https://github.com/mozilla/libmozdata
+    Python library which has a ``Supersearch`` class for performing queries and
+    a ``ProcessedCrash`` class for fetching processed crash data.
+
+https://github.com/mozilla-services/socorro
+    Socorro (the code base for Crash Stats) has a Docker-based local dev
+    environment which includes a series of commands for manipulating data.
+
+    https://socorro.readthedocs.io/en/latest/service/processor.html#processing-crashes
 
 
 Release process
