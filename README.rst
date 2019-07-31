@@ -1,6 +1,6 @@
-=============
+================
 crashstats-tools
-=============
+================
 
 Command line tools and library for interacting with Crash Stats
 (`<https://crash-stats.mozilla.org/>`_).
