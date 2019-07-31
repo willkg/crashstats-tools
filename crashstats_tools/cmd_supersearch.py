@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import argparse
+import json
 import logging
 from urllib.parse import urlparse, parse_qs
 
@@ -104,7 +105,7 @@ def fetch_supersearch(host, params, num_results, verbose=False):
 
         for hit in hits:
             crashids_count += 1
-            yield "\t".join([clean_whitespace(hit[field]) for field in params['_columns']])
+            yield hit
 
             # If we've gotten as many crashids as we need, we return
             if crashids_count >= num_results:
@@ -155,6 +156,12 @@ def main(argv=None):
         help='number of crash ids you want or "all" for all of them',
     )
     parser.add_argument(
+        "--format",
+        default="tab",
+        choices=["tab", "json"],
+        help="format for output"
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="increase verbosity of output"
     )
 
@@ -195,7 +202,10 @@ def main(argv=None):
     if args.verbose:
         print("Params: %s" % params)
 
-    for crashid in fetch_supersearch(host, params, num_results, verbose=args.verbose):
-        print(crashid)
+    for hit in fetch_supersearch(host, params, num_results, verbose=args.verbose):
+        if args.format == "tab":
+            print("\t".join([clean_whitespace(hit[field]) for field in params['_columns']]))
+        elif args.format == "json":
+            print(json.dumps(hit))
 
     return 0
