@@ -26,18 +26,32 @@ with::
 Tools
 =====
 
-fetch-crashids
---------------
+supersearch
+-----------
 
-Fetch a list of crash ids for crash reports based on various criteria.
+Perform Super Search queries on Crash Stats.
 
-Fetch 10 recent crash ids for Firefox::
+Fetch 10 crash ids for Firefox::
 
-    $ fetch-crashids --num=10 --product=Firefox
+    $ supersearch --num=10 --product=Firefox
 
-Fetch 100 crash ids that match a Supersearch query::
+Fetch 57 crash ids that match a Super Search query::
 
-    $ fetch-crashids --num=100 --url="https://crash-stats.mozilla.org/search/?release_channel=nightly&version=70.0a1&product=Firefox&_sort=-date"
+    $ supersearch --num=57 --supersearch-url="https://crash-stats.mozilla.org/search/?release_channel=nightly&version=70.0a1&product=Firefox&_sort=-date"
+
+Fetch uuid, product, version, and build_id for crash reports that have "OOM" in
+the signature::
+
+    $ supersearch --_columns=uuid --_columns=product --_columns=version --_columns=build_id --signature="~OOM"
+
+Results are tab-delimited. Tabs and newlines in output is escaped.
+
+Note that this doesn't do aggregations.
+
+See Super Search API details:
+
+* https://crash-stats.mozilla.org/documentation/supersearch/
+* https://crash-stats.mozilla.org/documentation/supersearch/api/
 
 
 fetch-data
@@ -46,6 +60,14 @@ fetch-data
 Fetch data for specified crash reports.
 
 This lets you download raw crash, dumps, and processed crash from Crash Stats.
+
+Fetch processed crash data for specific crash id::
+
+    $ fetch-data --no-raw --no-dumps --processed 723cacd6-1684-420e-a1c7-f04240190731
+
+Fetch raw crash data using supersearch command to generate crash ids::
+
+    $ supersearch --product=Firefox --num=10 | fetch-data --raw --no-dumps --no-processed crashdir
 
 
 API token
@@ -82,7 +104,7 @@ I'm going to put all the crash data in ``crashdata/`` to analyze it.
 I would do something like this::
 
     $ mkdir crashdata
-    $ fetch-crashids --product=Firefox --signature="OOM | small" --num=1000 | \
+    $ supersearch --product=Firefox --signature="OOM | small" --num=1000 | \
         fetch-data --no-raw --no-dumps --processed crashdata
 
 Then I run whatever analysis scripts I have on the processed crash data.

@@ -5,9 +5,9 @@
 import argparse
 import json
 import os
-import sys
 
 from crashstats_tools.utils import (
+    DEFAULT_HOST,
     FallbackToPipeAction,
     FlagAction,
     http_get,
@@ -130,7 +130,7 @@ def main(argv=None):
     )
     parser.add_argument(
         "--host",
-        default="https://crash-stats.mozilla.org",
+        default=DEFAULT_HOST,
         help="host to pull crash data from; this needs to match CRASHSTATS_API_TOKEN value",
     )
     parser.add_argument(
@@ -205,7 +205,3 @@ def main(argv=None):
         )
 
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

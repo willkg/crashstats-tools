@@ -4,12 +4,16 @@
 
 import argparse
 import datetime
+from functools import total_ordering
 import json
 import sys
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+
+
+DEFAULT_HOST = "https://crash-stats.mozilla.org"
 
 
 class JsonDTEncoder(json.JSONEncoder):
@@ -273,3 +277,68 @@ def http_get(url, params, api_token=None):
     # Raise an error for any other non-200 response
     resp.raise_for_status()
     return resp
+
+
+@total_ordering
+class Infinity(object):
+    """Infinity is greater than anything else except other Infinities
+
+    NOTE(willkg): There are multiple infinities and not all infinities are
+    equal, so what we're doing here is wrong, but it's helpful. We can rename
+    it if someone gets really annoyed.
+
+    """
+
+    def __eq__(self, obj):
+        return isinstance(obj, Infinity)
+
+    def __lt__(self, obj):
+        return False
+
+    def __repr__(self):
+        return "Infinity"
+
+    def __sub__(self, obj):
+        if isinstance(obj, Infinity):
+            return 0
+        return self
+
+    def __rsub__(self, obj):
+        # We don't need to deal with negative infinities, so let's not
+        raise ValueError("This Infinity does not support right-hand-side")
+
+
+# For our purposes, there is only one infinity
+INFINITY = Infinity()
+
+
+class InvalidArg(Exception):
+    pass
+
+
+def parse_args(args):
+    params = {}
+
+    while args:
+        field = args.pop(0)
+        if not field.startswith("--"):
+            raise InvalidArg("unknown argument %r" % field)
+            return 1
+
+        if "=" in field:
+            field, value = field.split("=", 1)
+        else:
+            if args:
+                value = args.pop(0)
+            else:
+                raise InvalidArg("arg %s has no value" % field)
+
+        # Remove the -- from the beginning of field
+        field = field[2:]
+
+        # Remove quotes from value if they exist
+        if value.startswith('"') and value.endswith('"'):
+            value = value[1:-1]
+
+        params.setdefault(field, []).append(value)
+    return params

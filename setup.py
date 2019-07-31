@@ -42,7 +42,7 @@ setup(
     python_requires='>=3.6',
     entry_points="""
         [console_scripts]
-        fetch-crashids=crashstats_tools.cmd_fetch_crashids:main
+        supersearch=crashstats_tools.cmd_supersearch:main
         fetch-data=crashstats_tools.cmd_fetch_data:main
     """,
     classifiers=[
