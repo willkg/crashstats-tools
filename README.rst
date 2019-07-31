@@ -73,7 +73,6 @@ Fetch raw crash data using supersearch command to generate crash ids::
         fetch-data --raw --no-dumps --no-processed crashdir
 
 
-
 API token
 =========
 
@@ -102,21 +101,66 @@ Use cases
 These tools are helpful when downloading data for analysis as well as
 downloading data to test other tools with.
 
-Say I want to do some analysis on data in registers for crash reports that have
-the signature "OOM | small".
 
-The registers are in the ``json_dump`` field of the processed crash. I don't
-need the raw crash or the dumps.
+Example 1
+---------
 
-I'm going to put all the crash data in ``crashdata/`` to analyze it.
+I want to collect a bunch of crash report data to look at possible values of an
+annotation in Firefox crash reports that's not available in Super Search, yet.
+
+Since I'm looking just at annotations, all I need is the raw crash.
 
 I would do something like this::
 
     $ mkdir crashdata
-    $ supersearch --product=Firefox --signature="OOM | small" --num=1000 | \
-        fetch-data --no-raw --no-dumps --processed crashdata
+    $ supersearch --product=Firefox --num=1000 | \
+        fetch-data --raw --no-dumps --no-processed crashdata
 
-Then I run whatever analysis scripts I have on the processed crash data.
+Then I can use ``jq`` or whatever to look at the crash report data in
+``crashdata/raw_crash/``.
+
+
+Example 2
+---------
+
+I want to test out a new JIT analysis tool that works on minidump files.
+
+I would write a script like this::
+
+    #!/bin/bash
+    
+    CRASHSTATS_API_TOKEN=foo
+    DATADIR=./crashdata
+    CRASHIDS=$(supersearch --product=Firefox --num=1000)
+    
+    mkdir -p "${DATADIR}"
+    
+    for crashid in ${CRASHIDS}
+    do
+        echo "crashid ${crashid}"
+        fetch-data --raw --dumps --no-processed "${DATADIR}" "${crashid}"
+    
+        # Not all crash reports have dumps--we only want to run analysis
+        # on the ones that do.
+        if [[ -e "crashdata/dump/${crashid}" ]]
+        then
+            echo "analyze dump ${crashid}..."
+            # run my tool on the dump
+        fi
+    done
+    
+
+Example 3
+---------
+
+I want to get a list of crash ids for today (2019-07-30) where
+``DOMFissionEnabled`` exists in the crash report.
+
+I would do this::
+
+    $ supersearch --date=">=2019-07-30" --date="<2019-07-31" --dom_fission_enabled="!__null__"
+
+
 
 
 Release process
