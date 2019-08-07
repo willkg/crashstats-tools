@@ -30,6 +30,14 @@ This is an alpha-quality project that I spent some time on because it seemed
 helpful. If you have any problems, please write up an issue in the issue
 tracker and I'll get to it when I'm able.
 
+If you use this, like it, appreciate it, or have any positive feeling, please
+give it a GitHub star. That helps me:
+
+1. have a proxy for knowing whether it's being used
+2. prioritize my time working on this project
+3. have a proxy for a list of users in case I have questions and need to ask
+   advise
+
 
 Tools
 =====
