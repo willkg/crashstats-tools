@@ -2,6 +2,13 @@
 History
 =======
 
+1.0.2 (In development)
+======================
+
+Features:
+
+* add reprocess command
+
 1.0.1 (July 31st, 2019)
 =======================
 

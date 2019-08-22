@@ -273,6 +273,32 @@ def http_get(url, params, api_token=None):
     return resp
 
 
+def http_post(url, data, api_token=None):
+    """POST data at url with api_token.
+
+    :raises BadAPIToken:
+
+    :returns: requests Response
+
+    """
+    if api_token:
+        headers = {"Auth-Token": api_token}
+    else:
+        headers = {}
+
+    session = session_with_retries()
+
+    resp = session.post(url, data=data, headers=headers)
+
+    # Handle 403 so we can provide the user more context
+    if api_token and resp.status_code == 403:
+        raise BadAPIToken(resp.json().get("error", "No error provided"))
+
+    # Raise an error for any other non-200 response
+    resp.raise_for_status()
+    return resp
+
+
 @total_ordering
 class Infinity(object):
     """Infinity is greater than anything else except other Infinities
