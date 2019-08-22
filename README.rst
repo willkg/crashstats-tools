@@ -17,10 +17,15 @@ Command line tools and library for interacting with Crash Stats
 Installing
 ==========
 
-crashstats-tools is available on `PyPI <https://pypi.org>`_. You can install it
-with::
+crashstats-tools is available on `PyPI <https://pypi.org>`_. You can install
+it with::
 
     $ pip install crashstats-tools
+
+However, since it has commands that you want to use, you probably want to
+install it with `pipx <https://pipxproject.github.io/pipx/>`_::
+
+    $ pipx install crashstats-tools
 
 
 Support
@@ -89,14 +94,36 @@ Fetch raw crash data using supersearch command to generate crash ids::
         fetch-data --raw --no-dumps --no-processed crashdir
 
 
+reprocess
+---------
+
+Let's you specify crash reports for reprocessing.
+
+Reprocess an individual crash report::
+
+    $ reprocess 723cacd6-1684-420e-a1c7-f04240190731
+
+Reprocess crash reports based on a supersearch::
+
+    $ supersearch --num=5 | reprocess
+
+.. Note::
+
+   The ``reprocess`` command requires that you set ``CRASHSTATS_API_TOKEN`` in
+   your environment with an API token that has the "Reprocess Crashes"
+   permission.
+
+
 API token
 =========
 
-You need to use a API token to:
+For ``supersearch`` and ``fetch-data``, you need to use a API token to:
 
 * download data containing personally identifiable information
 * download security sensitive data
 * get out from the shadow of extreme API use rate limiting
+
+You need an API token for ``reprocess``--it doesn't work without one.
 
 If you have access, you can generate an API token here:
 
