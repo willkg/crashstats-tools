@@ -11,6 +11,7 @@ Command line tools and library for interacting with Crash Stats
 :Issue tracker: https://github.com/willkg/crashstats-tools/issues
 :License: MPLv2
 :Status: Alpha
+:IRC: ``#breakpad`` on irc.mozilla.org
 :Community Participation Guidelines: `Guidelines <https://github.com/mozilla-services/antenna/blob/master/CODE_OF_CONDUCT.md>`_
 
 
