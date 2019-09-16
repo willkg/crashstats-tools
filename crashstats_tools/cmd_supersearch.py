@@ -144,7 +144,8 @@ def extract_supersearch_params(url):
 
     for key in list(params.keys()):
         # Remove any aggs
-        if key.startswith(["_facets", "_aggs", "_histogram", "_cardinality"]):
+        aggs_keys = ("_facets", "_aggs", "_histogram", "_cardinality")
+        if key.startswith(aggs_keys):
             del params[key]
 
     return params
