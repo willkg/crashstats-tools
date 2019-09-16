@@ -59,13 +59,15 @@ Fetch 10 crash ids for Firefox::
 
 Fetch 57 crash ids that match a Super Search query::
 
-    $ supersearch --num=57 --supersearch-url="https://crash-stats.mozilla.org/search/?release_channel=nightly&version=70.0a1&product=Firefox&_sort=-date"
+    $ supersearch --num=57 --supersearch-url='https://crash-stats.mozilla.org/search/?release_channel=nightly&version=70.0a1&product=Firefox&_sort=-date'
+
+Use single quotes for values so that your shell doesn't do any shell expansion.
 
 Fetch uuid, product, version, and build_id for crash reports that have "OOM" in
 the signature::
 
     $ supersearch --_columns=uuid --_columns=product --_columns=version \
-        --_columns=build_id --signature="~OOM"
+        --_columns=build_id --signature='~OOM'
 
 Results are formatted as tab-delimited by default. JSON output is also
 available.
@@ -113,6 +115,12 @@ Reprocess crash reports based on a supersearch::
    The ``reprocess`` command requires that you set ``CRASHSTATS_API_TOKEN`` in
    your environment with an API token that has the "Reprocess Crashes"
    permission.
+
+
+.. Note::
+
+   If you intend to reprocess more than 10,000 crash reports, please tell
+   us first.
 
 
 API token
@@ -202,7 +210,7 @@ I want to get a list of crash ids for today (2019-07-30) where
 
 I would do this::
 
-    $ supersearch --date=">=2019-07-30" --date="<2019-07-31" --dom_fission_enabled="!__null__"
+    $ supersearch --date=">=2019-07-30" --date='<2019-07-31' --dom_fission_enabled='!__null__'
 
 
 Prior art and related projects

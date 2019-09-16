@@ -27,13 +27,16 @@ First, you can specify Super Search API fields to generate the query.
 
 For example:
 
-$ supersearch --product=Firefox --num=100 --date=">=2019-07-31"
+$ supersearch --product=Firefox --num=100 --date='>=2019-07-31'
 
 Second, you can pass in a url from a Super Search on Crash Stats. This command
 will then pull out the parameters. You can override those parameters with
 command line arguments.
 
-$ supersearch --supersearch-url="longurlhere" --num=100
+$ supersearch --supersearch-url='longurlhere' --num=100
+
+Make sure to use single quotes when specifying values so that your shell doesn't
+expand variables.
 
 Returned fields are tab-delimited. You can specify them using the Super Search
 field "_columns".
