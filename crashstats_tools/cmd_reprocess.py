@@ -51,6 +51,14 @@ def main(argv=None):
         default=SLEEP_DEFAULT,
     )
     parser.add_argument(
+        "--allowmany",
+        action="store_true",
+        help=(
+            "don't prompt user about letting us know about reprocessing "
+            "more than 10,000 crashes"
+        )
+    )
+    parser.add_argument(
         "crashid",
         help="one or more crash ids to fetch data for",
         nargs="*",
@@ -71,16 +79,17 @@ def main(argv=None):
     print("Sending reprocessing requests to: %s" % url)
 
     crash_ids = args.crashid
-    if len(crash_ids) > 10000:
+    if len(crash_ids) > 10000 and not args.allowmany:
         print(
             "You are trying to reprocess more than 10,000 crash reports at "
             "once. Please let us know on #breakpad on irc.mozilla.org "
             "before you do this."
         )
-        let_us_know = input("Did you let us know? Y/n")
-        if let_us_know.lower() != "y":
-            print("Exiting.")
-            return 1
+        print("")
+        print("Pass in --allowmany argument.")
+        print("")
+        print("Exiting.")
+        return 1
 
     print(
         "Reprocessing %s crashes sleeping %s seconds between groups..."
