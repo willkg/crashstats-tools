@@ -240,10 +240,12 @@ def session_with_retries(
     return session
 
 
+class BadRequest(Exception):
+    """HTTP Request is not valid."""
+
+
 class BadAPIToken(Exception):
     """API Token is not valid."""
-
-    pass
 
 
 def http_get(url, params, api_token=None):
@@ -267,6 +269,10 @@ def http_get(url, params, api_token=None):
     # Handle 403 so we can provide the user more context
     if api_token and resp.status_code == 403:
         raise BadAPIToken(resp.json().get("error", "No error provided"))
+
+    # Handle 400 which indicates a problem with the request
+    if resp.status_code == 400:
+        raise BadRequest(resp.json().get("error", "No error provided"))
 
     # Raise an error for any other non-200 response
     resp.raise_for_status()
