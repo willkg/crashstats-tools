@@ -4,10 +4,11 @@ include HISTORY.rst
 include CODE_OF_CONDUCT.md
 include requirements-dev.txt
 include tox.ini
+include Makefile
 
 recursive-include bin *.sh
 recursive-include crashstats_tools *.rst
 recursive-include crashstats_tools *.txt
 
-exclude .circleci
 recursive-exclude .circleci *
+recursive-exclude .github *
