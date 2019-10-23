@@ -20,9 +20,9 @@ Installing
 crashstats-tools is available on `PyPI <https://pypi.org>`_. You can install
 it with::
 
-    $ pip install crashstats-tools
+    $ pip install --user crashstats-tools
 
-However, since it has commands that you want to use, you probably want to
+Since it has commands that you want to use, you probably want to
 install it with `pipx <https://pipxproject.github.io/pipx/>`_::
 
     $ pipx install crashstats-tools
