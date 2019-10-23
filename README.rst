@@ -10,7 +10,6 @@ Command line tools and library for interacting with Crash Stats
 :Changelog: Check the ``HISTORY.rst`` file
 :Issue tracker: https://github.com/willkg/crashstats-tools/issues
 :License: MPLv2
-:Status: Alpha
 :Slack: ``#breakpad`` on Mozilla Slack
 :Community Participation Guidelines: `Guidelines <https://github.com/mozilla-services/antenna/blob/master/CODE_OF_CONDUCT.md>`_
 
@@ -57,6 +56,19 @@ Fetch 10 crash ids for Firefox::
 
     $ supersearch --num=10 --product=Firefox
 
+Fetch all crash reports that have ``libc2.30.so/E22A1E7AEF7C58504AF2C60A5AD3A7AE0``
+in the ``modules_in_stack`` field::
+
+    $ supersearch --modules_in_stack=libc2.30.so/E22A1E7AEF6C58504AF2C60A5AD3A7AE0
+
+This is helpful when you need to reprocess crash reports after uploading symbols
+for a module that we didn't have symbols for.
+
+Fetch all crash reports that have ``libfenix.so`` in the ``modules_in_stack``
+field::
+
+   $ supersearch --verbose --modules_in_stack='^libfenix.so'
+
 Fetch 57 crash ids that match a Super Search query::
 
     $ supersearch --num=57 --supersearch-url='https://crash-stats.mozilla.org/search/?release_channel=nightly&version=70.0a1&product=Firefox&_sort=-date'
@@ -74,7 +86,7 @@ available.
 
 Note that this doesn't support Super Search aggregations.
 
-See Super Search API details:
+See Super Search API documentation for details on notation and fields:
 
 * https://crash-stats.mozilla.org/documentation/supersearch/
 * https://crash-stats.mozilla.org/documentation/supersearch/api/
