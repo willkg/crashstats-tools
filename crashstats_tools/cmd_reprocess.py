@@ -56,7 +56,7 @@ def main(argv=None):
         help=(
             "don't prompt user about letting us know about reprocessing "
             "more than 10,000 crashes"
-        )
+        ),
     )
     parser.add_argument(
         "crashid",
@@ -102,9 +102,7 @@ def main(argv=None):
             "Processing group ending with %s ... (%s/%s)"
             % (group[-1], i + 1, len(groups))
         )
-        resp = http_post(
-            url, data={"crash_ids": group}, api_token=api_token
-        )
+        resp = http_post(url, data={"crash_ids": group}, api_token=api_token)
         if resp.status_code != 200:
             print(
                 "Got back non-200 status code: %s %s" % (resp.status_code, resp.content)
