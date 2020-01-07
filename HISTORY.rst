@@ -2,6 +2,17 @@
 History
 =======
 
+1.0.4 (in development)
+======================
+
+Features:
+
+* Add support for CRASHID, bp-CRASHID, and
+  https://crash-stats.mozilla.org/report/index/CRASHID formats of crash id in
+  reprocess and fetch_data commands
+* Add tests for utils functions
+
+
 1.0.3 (October 23rd, 2019)
 ==========================
 
@@ -23,12 +34,14 @@ Features:
 
 * add reprocess command
 
+
 1.0.1 (July 31st, 2019)
 =======================
 
 Bugs:
 
 * fix saving ``dump_names``
+
 
 1.0.0 (July 31st, 2019)
 =======================
