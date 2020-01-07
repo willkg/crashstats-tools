@@ -6,7 +6,9 @@ import argparse
 import datetime
 from functools import total_ordering
 import json
+import re
 import sys
+from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -343,6 +345,7 @@ class InvalidArg(Exception):
 
 
 def parse_args(args):
+    """Convert command line arguments to supersearch arguments."""
     params = {}
 
     while args:
@@ -368,3 +371,58 @@ def parse_args(args):
 
         params.setdefault(field, []).append(value)
     return params
+
+
+CRASH_ID_RE = re.compile(
+    r"""
+    ^
+    [a-f0-9]{8}-
+    [a-f0-9]{4}-
+    [a-f0-9]{4}-
+    [a-f0-9]{4}-
+    [a-f0-9]{6}
+    [0-9]{6}      # date in YYMMDD
+    $
+""",
+    re.VERBOSE,
+)
+
+
+def is_crash_id_valid(crash_id):
+    """Returns whether this is a valid crash id
+
+    :arg str crash_id: the crash id in question
+
+    :returns: True if it's valid, False if not
+
+    """
+    return bool(CRASH_ID_RE.match(crash_id))
+
+
+def parse_crashid(item):
+    """Returns a crashid from a number of formats.
+
+    This handles the following three forms of crashids:
+
+    * CRASHID
+    * bp-CRASHID
+    * http[s]://HOST[:PORT]/report/index/CRASHID
+
+    :arg str item: the thing to parse a crash id from
+
+    :returns: crashid as str or None
+
+    """
+    if is_crash_id_valid(item):
+        return item
+
+    if item.startswith("bp-") and is_crash_id_valid(item[3:]):
+        return item[3:]
+
+    if item.startswith("http"):
+        parsed = urlparse(item)
+        path = parsed.path
+        if path.startswith("/report/index"):
+            crash_id = path.split("/")[-1]
+            if is_crash_id_valid(crash_id):
+                return crash_id

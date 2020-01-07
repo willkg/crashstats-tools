@@ -12,6 +12,7 @@ from crashstats_tools.utils import (
     FlagAction,
     http_get,
     JsonDTEncoder,
+    parse_crashid,
     WrappedTextHelpFormatter,
 )
 
@@ -194,10 +195,11 @@ def main(argv=None):
             "No api token provided. Skipping dumps and personally identifiable information."
         )
 
-    for crash_id in args.crashid:
-        crash_id = crash_id.strip()
+    crashids = [parse_crashid(crashid.strip()) for crashid in args.crashid]
+    for crashid in crashids:
+        crashid = crashid.strip()
 
-        print("Working on %s..." % crash_id)
+        print("Working on %s..." % crashid)
         fetch_crash(
             host=args.host,
             fetchraw=args.fetchraw,
@@ -205,7 +207,7 @@ def main(argv=None):
             fetchprocessed=args.fetchprocessed,
             outputdir=outputdir,
             api_token=api_token,
-            crash_id=crash_id,
+            crash_id=crashid,
         )
 
     return 0

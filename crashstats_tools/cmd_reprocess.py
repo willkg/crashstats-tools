@@ -12,6 +12,7 @@ from crashstats_tools.utils import (
     DEFAULT_HOST,
     FallbackToPipeAction,
     http_post,
+    parse_crashid,
     WrappedTextHelpFormatter,
 )
 
@@ -78,8 +79,11 @@ def main(argv=None):
     url = args.host.rstrip("/") + "/api/Reprocessing/"
     print("Sending reprocessing requests to: %s" % url)
 
-    crash_ids = args.crashid
-    if len(crash_ids) > 10000 and not args.allowmany:
+    crashids = [
+        parse_crashid(crashid.strip())
+        for crashid in args.crashid
+    ]
+    if len(crashids) > 10000 and not args.allowmany:
         print(
             "You are trying to reprocess more than 10,000 crash reports at "
             "once. Please let us know on #breakpad on irc.mozilla.org "
@@ -93,10 +97,10 @@ def main(argv=None):
 
     print(
         "Reprocessing %s crashes sleeping %s seconds between groups..."
-        % (len(crash_ids), args.sleep)
+        % (len(crashids), args.sleep)
     )
 
-    groups = list(chunked(crash_ids, CHUNK_SIZE))
+    groups = list(chunked(crashids, CHUNK_SIZE))
     for i, group in enumerate(groups):
         print(
             "Processing group ending with %s ... (%s/%s)"
