@@ -22,7 +22,7 @@ def get_version():
     return re.search(vsre, version_file, re.M).group(1)
 
 
-install_requires = ["requests", "more_itertools"]
+install_requires = ["click", "requests", "more_itertools"]
 
 
 setup(
@@ -43,6 +43,7 @@ setup(
         fetch-data=crashstats_tools.cmd_fetch_data:main
         reprocess=crashstats_tools.cmd_reprocess:main
         supersearch=crashstats_tools.cmd_supersearch:main
+        supersearchfacet=crashstats_tools.cmd_supersearchfacet:supersearchfacet
     """,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
