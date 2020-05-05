@@ -18,7 +18,7 @@ from crashstats_tools.utils import (
 )
 
 
-TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
+WHITESPACE_TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
 
 RELATIVE_RE = re.compile(r"(\d+)([hdwm])", re.IGNORECASE)
 
@@ -57,10 +57,14 @@ def generate_dates(start_date, end_date):
 
 def clean_whitespace(text):
     text = text or ""
-
-    for s, replace in TO_CLEAN:
+    for s, replace in WHITESPACE_TO_CLEAN:
         text = text.replace(s, replace)
     return text
+
+
+def clean_pipes(text):
+    text = text or ""
+    return text.replace("|", "\\|")
 
 
 def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
@@ -79,7 +83,7 @@ def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
     params["_results_number"] = 0
 
     if verbose:
-        click.echo(url, params)
+        click.echo("%s %s" % (url, params))
 
     resp = http_get(url=url, params=params, api_token=api_token)
     return resp.json()["facets"]
@@ -181,7 +185,8 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
     """
 
     # Require at least one facet specified.
-    if "_facets" not in ctx.args:
+    parsed_args = parse_args(ctx.args)
+    if "_facets" not in parsed_args:
         click.echo(ctx.get_help())
         ctx.exit(1)
 
@@ -202,7 +207,7 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
     else:
         params = {}
 
-    params.update(parse_args(ctx.args))
+    params.update(parsed_args)
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
@@ -235,7 +240,13 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
             if format_type == "tab":
                 click.echo("%s\tcount" % facet_name)
                 for item in sorted(facets[facet_name], key=lambda x: x["count"], reverse=True):
-                    click.echo("%s\t%s" % (item["term"], item["count"]))
+                    click.echo("%s\t%s" % (clean_whitespace(item["term"]), item["count"]))
+
+            elif format_type == "markdown":
+                click.echo("%s | count" % facet_name)
+                click.echo("%s | -----" % ("-" * len(facet_name)))
+                for item in sorted(facets[facet_name], key=lambda x: x["count"], reverse=True):
+                    click.echo("%s | %s" % (clean_pipes(clean_whitespace(item["term"])), item["count"]))
 
             elif format_type == "json":
                 click.echo(json.dumps(facets[facet_name]))
@@ -308,11 +319,11 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
                 some_date = list(table.keys())[0]
                 header_row = ["date"] + sorted(table[some_date].keys())
                 click.echo(" | ".join(header_row))
-                click.echo("-|-".join(["-" * len(item) for item in header_row]))
+                click.echo(" | ".join(["-" * len(item) for item in header_row]))
 
                 for date, value_counts in table.items():
                     row = [date] + [item[1] for item in sorted(value_counts.items())]
-                    click.echo(" | ".join([clean_whitespace(str(item)) for item in row]))
+                    click.echo(" | ".join([clean_pipes(clean_whitespace(str(item))) for item in row]))
 
                 click.echo("")
 
