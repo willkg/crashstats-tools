@@ -79,7 +79,7 @@ def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
     params["_results_number"] = 0
 
     if verbose:
-        print(url, params)
+        click.echo(url, params)
 
     resp = http_get(url=url, params=params, api_token=api_token)
     return resp.json()["facets"]
