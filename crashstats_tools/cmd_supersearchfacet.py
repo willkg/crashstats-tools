@@ -211,7 +211,7 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
             click.echo("Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4)))
         else:
             click.echo(
-                "No api token provided. Skipping dumps and personally identifiable information."
+                "No api token provided. Skipping personally identifiable information."
             )
 
     if not start_date:
