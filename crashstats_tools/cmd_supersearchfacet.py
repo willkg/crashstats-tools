@@ -11,11 +11,7 @@ from urllib.parse import urlparse, parse_qs
 
 import click
 
-from crashstats_tools.utils import (
-    DEFAULT_HOST,
-    http_get,
-    parse_args,
-)
+from crashstats_tools.utils import DEFAULT_HOST, http_get, parse_args
 
 
 WHITESPACE_TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
@@ -36,12 +32,7 @@ def parse_relative_date(text):
     count = int(parsed.group(1))
     unit = parsed.group(2)
 
-    unit_to_arg = {
-        "h": "hours",
-        "d": "days",
-        "w": "weeks",
-        "m": "months",
-    }
+    unit_to_arg = {"h": "hours", "d": "days", "w": "weeks", "m": "months"}
     return datetime.timedelta(**{unit_to_arg[unit]: count})
 
 
@@ -103,18 +94,21 @@ def extract_supersearch_params(url):
     return params
 
 
-@click.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@click.command(
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
 @click.option(
     "--host", default=DEFAULT_HOST, help="host for system to fetch facets from"
 )
-@click.option(
-    "--supersearch-url", default="", help="Super Search url to base query on"
-)
+@click.option("--supersearch-url", default="", help="Super Search url to base query on")
 @click.option(
     "--start-date", default="", help="start date for range; YYYY-MM-DD format"
 )
 @click.option(
-    "--end-date", default=DEFAULT_NOW, show_default=True, help="end date for range; YYYY-MM-DD format"
+    "--end-date",
+    default=DEFAULT_NOW,
+    show_default=True,
+    help="end date for range; YYYY-MM-DD format",
 )
 @click.option(
     "--relative-range", default="7d", help="relative range ending on end-date"
@@ -127,13 +121,24 @@ def extract_supersearch_params(url):
     "format_type",
     default="tab",
     show_default=True,
-    help="format to print output: tab, markdown, or json",
+    type=click.Choice(["tab", "markdown", "json"], case_sensitive=False),
+    help="format to print output",
 )
 @click.option(
     "--verbose/--no-verbose", default=False, help="whether to print debugging output"
 )
 @click.pass_context
-def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_range, daily, format_type, verbose):
+def supersearchfacet(
+    ctx,
+    host,
+    supersearch_url,
+    end_date,
+    start_date,
+    relative_range,
+    daily,
+    format_type,
+    verbose,
+):
     """Fetches facet data from Crash Stats using Super Search
 
     There are two ways to run this:
@@ -172,11 +177,11 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
     rate-limiting.  Set the CRASHSTATS_API_TOKEN environment variable to your API
     token value:
 
-        CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
+    CRASHSTATS_API_TOKEN=xyz supersearchfacet ...
 
     To create an API token for Crash Stats, visit:
 
-        https://crash-stats.mozilla.org/api/tokens/
+    https://crash-stats.mozilla.org/api/tokens/
 
     Remember to abide by the data access policy when using data from Crash Stats!
     The policy is specified here:
@@ -190,10 +195,6 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
         click.echo(ctx.get_help())
         ctx.exit(1)
 
-    if format_type not in ("tab", "json", "markdown"):
-        raise click.BadParameter(
-            "Invalid format.", ctx=ctx, param="format", param_hint="format"
-        )
     if verbose:
         # Set logging to DEBUG because this picks up debug logging from
         # requests which lets us see urls.
@@ -213,7 +214,9 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if verbose:
         if api_token:
-            click.echo("Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4)))
+            click.echo(
+                "Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4))
+            )
         else:
             click.echo(
                 "No api token provided. Skipping personally identifiable information."
@@ -221,17 +224,19 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
 
     if not start_date:
         range_timedelta = parse_relative_date(relative_range)
-        start_date = (datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta).strftime("%Y-%m-%d")
+        start_date = (
+            datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
+        ).strftime("%Y-%m-%d")
 
     if not daily:
-        params.update({
-            "date": [">=%s" % start_date, "<%s" % end_date]
-        })
+        params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
         if verbose:
             click.echo("Params: %s" % params)
 
-        facets = fetch_supersearch_facets(host, params, api_token=api_token, verbose=verbose)
+        facets = fetch_supersearch_facets(
+            host, params, api_token=api_token, verbose=verbose
+        )
 
         for facet_name in params.get("_facets", facets.keys()):
             if facet_name not in facets:
@@ -239,14 +244,23 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
 
             if format_type == "tab":
                 click.echo("%s\tcount" % facet_name)
-                for item in sorted(facets[facet_name], key=lambda x: x["count"], reverse=True):
-                    click.echo("%s\t%s" % (clean_whitespace(item["term"]), item["count"]))
+                for item in sorted(
+                    facets[facet_name], key=lambda x: x["count"], reverse=True
+                ):
+                    click.echo(
+                        "%s\t%s" % (clean_whitespace(item["term"]), item["count"])
+                    )
 
             elif format_type == "markdown":
                 click.echo("%s | count" % facet_name)
                 click.echo("%s | -----" % ("-" * len(facet_name)))
-                for item in sorted(facets[facet_name], key=lambda x: x["count"], reverse=True):
-                    click.echo("%s | %s" % (clean_pipes(clean_whitespace(item["term"])), item["count"]))
+                for item in sorted(
+                    facets[facet_name], key=lambda x: x["count"], reverse=True
+                ):
+                    click.echo(
+                        "%s | %s"
+                        % (clean_pipes(clean_whitespace(item["term"])), item["count"])
+                    )
 
             elif format_type == "json":
                 click.echo(json.dumps(facets[facet_name]))
@@ -258,21 +272,23 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
         facet_tables = {facet_name: {} for facet_name in facet_names}
 
         for day_start_date, day_end_date in generate_dates(start_date, end_date):
-            params.update({
-                "date": [">=%s" % day_start_date, "<%s" % day_end_date]
-            })
+            params.update({"date": [">=%s" % day_start_date, "<%s" % day_end_date]})
 
             if verbose:
                 click.echo("Params: %s" % params)
 
-            facets = fetch_supersearch_facets(host, params, api_token=api_token, verbose=verbose)
+            facets = fetch_supersearch_facets(
+                host, params, api_token=api_token, verbose=verbose
+            )
 
             for facet_name in facet_names:
                 if facet_name not in facets:
                     continue
 
                 for item in facets[facet_name]:
-                    facet_tables[facet_name].setdefault(day_start_date, {})[item["term"]] = item["count"]
+                    facet_tables[facet_name].setdefault(day_start_date, {})[
+                        item["term"]
+                    ] = item["count"]
 
         # Normalize the data--make sure table rows have all the values
         for facet_name in facet_names:
@@ -323,7 +339,11 @@ def supersearchfacet(ctx, host, supersearch_url, end_date, start_date, relative_
 
                 for date, value_counts in table.items():
                     row = [date] + [item[1] for item in sorted(value_counts.items())]
-                    click.echo(" | ".join([clean_pipes(clean_whitespace(str(item))) for item in row]))
+                    click.echo(
+                        " | ".join(
+                            [clean_pipes(clean_whitespace(str(item))) for item in row]
+                        )
+                    )
 
                 click.echo("")
 

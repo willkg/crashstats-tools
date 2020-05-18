@@ -4,11 +4,7 @@
 
 import pytest
 
-from crashstats_tools.utils import (
-    is_crash_id_valid,
-    parse_args,
-    parse_crashid,
-)
+from crashstats_tools.utils import is_crash_id_valid, parse_args, parse_crashid
 
 
 @pytest.mark.parametrize(
@@ -26,12 +22,15 @@ def test_validate_crash_id(crashid, expected):
     assert is_crash_id_valid(crashid) == expected
 
 
-@pytest.mark.parametrize("args, expected", [
-    ([], {}),
-    (["--foo", "bar"], {"foo": ["bar"]}),
-    (["--foo=bar"], {"foo": ["bar"]}),
-    (["--foo=bar1", "--foo=bar2"], {"foo": ["bar1", "bar2"]}),
-])
+@pytest.mark.parametrize(
+    "args, expected",
+    [
+        ([], {}),
+        (["--foo", "bar"], {"foo": ["bar"]}),
+        (["--foo=bar"], {"foo": ["bar"]}),
+        (["--foo=bar1", "--foo=bar2"], {"foo": ["bar1", "bar2"]}),
+    ],
+)
 def test_parse_args(args, expected):
     assert parse_args(args) == expected
 
