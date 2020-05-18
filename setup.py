@@ -40,7 +40,7 @@ setup(
     python_requires=">=3.6",
     entry_points="""
         [console_scripts]
-        fetch-data=crashstats_tools.cmd_fetch_data:main
+        fetch-data=crashstats_tools.cmd_fetch_data:fetch_data
         reprocess=crashstats_tools.cmd_reprocess:reprocess
         supersearch=crashstats_tools.cmd_supersearch:main
         supersearchfacet=crashstats_tools.cmd_supersearchfacet:supersearchfacet

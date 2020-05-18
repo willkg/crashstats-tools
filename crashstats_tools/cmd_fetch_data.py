@@ -2,48 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import argparse
 import json
 import os
+import sys
 
-from crashstats_tools.utils import (
-    DEFAULT_HOST,
-    FallbackToPipeAction,
-    FlagAction,
-    http_get,
-    JsonDTEncoder,
-    parse_crashid,
-    WrappedTextHelpFormatter,
-)
+import click
 
-
-DESCRIPTION = """
-Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
-"""
-
-
-EPILOG = """
-Given one or more crash ids via command line or stdin (one per line), fetches
-crash data and puts it in specified directory.
-
-Crash data is split up into directories: raw_crash/, dump_names/,
-processed_crash/, and directories with the same name as the dump type.
-
-This requires an API token in order to download dumps, personally identifiable
-information, and security-sensitive data. It also reduces rate-limiting.  Set
-the CRASHSTATS_API_TOKEN environment variable to your API token value:
-
-    CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
-
-To create an API token for Crash Stats, visit:
-
-    https://crash-stats.mozilla.org/api/tokens/
-
-Remember to abide by the data access policy when using data from Crash Stats!
-The policy is specified here:
-
-https://crash-stats.mozilla.org/documentation/memory_dump_access/
-"""
+from crashstats_tools.utils import DEFAULT_HOST, http_get, JsonDTEncoder, parse_crashid
 
 
 def create_dir_if_needed(d):
@@ -61,7 +26,7 @@ def fetch_crash(
     """
     if fetchraw:
         # Fetch raw crash metadata
-        print("Fetching raw %s" % crash_id)
+        click.echo("Fetching raw %s" % crash_id)
         resp = http_get(
             url=host + "/api/RawCrash/",
             params={"crash_id": crash_id, "format": "meta"},
@@ -85,7 +50,7 @@ def fetch_crash(
 
         # Fetch dumps
         for dump_name in dump_names:
-            print("Fetching dump %s/%s" % (crash_id, dump_name))
+            click.echo("Fetching dump %s/%s" % (crash_id, dump_name))
 
             # We store "upload_file_minidump" as "dump", so we need to use that
             # name when requesting from the RawCrash api
@@ -112,7 +77,7 @@ def fetch_crash(
 
     if fetchprocessed:
         # Fetch processed crash data
-        print("Fetching processed %s" % crash_id)
+        click.echo("Fetching processed %s" % crash_id)
         resp = http_get(
             host + "/api/ProcessedCrash/",
             params={"crash_id": crash_id, "format": "meta"},
@@ -126,88 +91,102 @@ def fetch_crash(
             json.dump(resp.json(), fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
 
 
-def main(argv=None):
-    """Fetches crash data from Crash Stats."""
-    parser = argparse.ArgumentParser(
-        formatter_class=WrappedTextHelpFormatter,
-        description=DESCRIPTION.strip(),
-        epilog=EPILOG.strip(),
-    )
-    parser.add_argument(
-        "--host",
-        default=DEFAULT_HOST,
-        help="host to pull crash data from; this needs to match CRASHSTATS_API_TOKEN value",
-    )
-    parser.add_argument(
-        "--raw",
-        "--no-raw",
-        dest="fetchraw",
-        action=FlagAction,
-        default=True,
-        help="whether or not to save raw crash data",
-    )
-    parser.add_argument(
-        "--dumps",
-        "--no-dumps",
-        dest="fetchdumps",
-        action=FlagAction,
-        default=True,
-        help="whether or not to save dumps",
-    )
-    parser.add_argument(
-        "--processed",
-        "--no-processed",
-        dest="fetchprocessed",
-        action=FlagAction,
-        default=False,
-        help="whether or not to save processed crash data",
-    )
+@click.command()
+@click.option(
+    "--host",
+    default=DEFAULT_HOST,
+    help="host to pull crash data from; this needs to match CRASHSTATS_API_TOKEN value",
+)
+@click.option(
+    "--raw/--no-raw",
+    "fetchraw",
+    default=True,
+    help="whether or not to save raw crash data",
+)
+@click.option(
+    "--dumps/--no-dumps",
+    "fetchdumps",
+    default=True,
+    help="whether or not to save dumps",
+)
+@click.option(
+    "--processed/--no-processed",
+    "fetchprocessed",
+    default=False,
+    help="whether or not to save processed crash data",
+)
+@click.argument("outputdir")
+@click.argument("crashids", nargs=-1)
+@click.pass_context
+def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crashids):
+    """
+    Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
 
-    parser.add_argument("outputdir", help="directory to place crash data in")
-    parser.add_argument(
-        "crashid",
-        help="one or more crash ids to fetch data for",
-        nargs="*",
-        action=FallbackToPipeAction,
-    )
+    Given one or more crash ids via command line or stdin (one per line), fetches
+    crash data and puts it in specified directory.
 
-    if argv is None:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args(argv)
+    Crash data is split up into directories: raw_crash/, dump_names/,
+    processed_crash/, and directories with the same name as the dump type.
 
-    if args.fetchdumps and not args.fetchraw:
-        print("You cannot fetch dumps without also fetching the raw crash. Exiting.")
-        return 1
+    This requires an API token in order to download dumps, personally identifiable
+    information, and security-sensitive data. It also reduces rate-limiting.  Set
+    the CRASHSTATS_API_TOKEN environment variable to your API token value:
+
+        CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
+
+    To create an API token for Crash Stats, visit:
+
+        https://crash-stats.mozilla.org/api/tokens/
+
+    Remember to abide by the data access policy when using data from Crash Stats!
+    The policy is specified here:
+
+    https://crash-stats.mozilla.org/documentation/memory_dump_access/
+    """
+
+    if fetchdumps and not fetchraw:
+        raise click.BadOptionUsage(
+            "fetchdumps",
+            "You cannot fetch dumps without also fetching the raw crash. Exiting.",
+            ctx=ctx,
+        )
 
     # Validate outputdir and exit if it doesn't exist or isn't a directory
-    outputdir = args.outputdir
     if os.path.exists(outputdir) and not os.path.isdir(outputdir):
-        print("%s is not a directory. Please fix. Exiting." % outputdir)
-        return 1
+        raise click.ClickException(
+            "%s is not a directory. Please fix. Exiting." % outputdir
+        )
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if api_token:
-        print("Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4)))
+        click.echo(
+            "Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4))
+        )
     else:
-        print(
+        click.echo(
             "No api token provided. Skipping dumps and personally identifiable information."
         )
 
-    crashids = [parse_crashid(crashid.strip()) for crashid in args.crashid]
+    if not crashids and not sys.stdin.isatty():
+        crashids = list(click.get_text_stream("stdin").readlines())
+
+    crashids = [parse_crashid(crashid.strip()) for crashid in crashids]
     for crashid in crashids:
         crashid = crashid.strip()
 
-        print("Working on %s..." % crashid)
+        click.echo("Working on %s..." % crashid)
         fetch_crash(
-            host=args.host,
-            fetchraw=args.fetchraw,
-            fetchdumps=args.fetchdumps if api_token else False,
-            fetchprocessed=args.fetchprocessed,
+            host=host,
+            fetchraw=fetchraw,
+            fetchdumps=fetchdumps if api_token else False,
+            fetchprocessed=fetchprocessed,
             outputdir=outputdir,
             api_token=api_token,
             crash_id=crashid,
         )
+    click.echo("Done!")
 
-    return 0
+
+if __name__ == "__main__":
+    fetch_data()
