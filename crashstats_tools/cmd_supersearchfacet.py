@@ -11,10 +11,14 @@ from urllib.parse import urlparse, parse_qs
 
 import click
 
-from crashstats_tools.utils import DEFAULT_HOST, http_get, parse_args
+from crashstats_tools.utils import (
+    DEFAULT_HOST,
+    http_get,
+    parse_args,
+    tableize_markdown,
+    tableize_tab,
+)
 
-
-WHITESPACE_TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
 
 RELATIVE_RE = re.compile(r"(\d+)([hdwm])", re.IGNORECASE)
 
@@ -44,18 +48,6 @@ def generate_dates(start_date, end_date):
         next_end_date = start_date + datetime.timedelta(days=1)
         yield start_date.strftime("%Y-%m-%d"), next_end_date.strftime("%Y-%m-%d")
         start_date = next_end_date
-
-
-def clean_whitespace(text):
-    text = text or ""
-    for s, replace in WHITESPACE_TO_CLEAN:
-        text = text.replace(s, replace)
-    return text
-
-
-def clean_pipes(text):
-    text = text or ""
-    return text.replace("|", "\\|")
 
 
 def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
@@ -228,6 +220,8 @@ def supersearchfacet(
             datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
         ).strftime("%Y-%m-%d")
 
+    # If it's not daily, then we can do a single facet and print the data out
+    # and we're done.
     if not daily:
         params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
@@ -238,119 +232,91 @@ def supersearchfacet(
             host, params, api_token=api_token, verbose=verbose
         )
 
-        for facet_name in params.get("_facets", facets.keys()):
-            if facet_name not in facets:
-                continue
+        if format_type == "json":
+            click.echo(json.dumps(facets))
 
-            if format_type == "tab":
-                click.echo("%s\tcount" % facet_name)
-                for item in sorted(
-                    facets[facet_name], key=lambda x: x["count"], reverse=True
-                ):
-                    click.echo(
-                        "%s\t%s" % (clean_whitespace(item["term"]), item["count"])
-                    )
-
-            elif format_type == "markdown":
-                click.echo("%s | count" % facet_name)
-                click.echo("%s | -----" % ("-" * len(facet_name)))
-                for item in sorted(
-                    facets[facet_name], key=lambda x: x["count"], reverse=True
-                ):
-                    click.echo(
-                        "%s | %s"
-                        % (clean_pipes(clean_whitespace(item["term"])), item["count"])
-                    )
-
-            elif format_type == "json":
-                click.echo(json.dumps(facets[facet_name]))
-
-    else:
-        facet_names = params.get("_facets", ["signature"])
-
-        # Map of facet_name -> (map of date -> (map of value -> count))
-        facet_tables = {facet_name: {} for facet_name in facet_names}
-
-        for day_start_date, day_end_date in generate_dates(start_date, end_date):
-            params.update({"date": [">=%s" % day_start_date, "<%s" % day_end_date]})
-
-            if verbose:
-                click.echo("Params: %s" % params)
-
-            facets = fetch_supersearch_facets(
-                host, params, api_token=api_token, verbose=verbose
-            )
-
-            for facet_name in facet_names:
+        else:
+            for facet_name in params.get("_facets", facets.keys()):
                 if facet_name not in facets:
                     continue
 
-                for item in facets[facet_name]:
-                    facet_tables[facet_name].setdefault(day_start_date, {})[
-                        item["term"]
-                    ] = item["count"]
-
-        # Normalize the data--make sure table rows have all the values
-        for facet_name in facet_names:
-            values = set()
-
-            table = facet_tables[facet_name]
-            for date, value_counts in table.items():
-                values = values | set(value_counts.keys())
-
-            for date, value_counts in table.items():
-                missing_values = values - set(value_counts.keys())
-                for missing_value in missing_values:
-                    value_counts[missing_value] = 0
-
-        # Print out the data
-        if format_type == "tab":
-            for facet_name in facet_names:
-                table = facet_tables[facet_name]
-
-                if not table:
-                    click.echo("%s\tno data" % facet_name)
-                    continue
-
-                # Print header row
-                some_date = list(table.keys())[0]
-                header_row = ["date"] + sorted(table[some_date].keys())
-                click.echo("\t".join(header_row))
-
-                for date, value_counts in table.items():
-                    row = [date] + [item[1] for item in sorted(value_counts.items())]
-                    click.echo("\t".join([clean_whitespace(str(item)) for item in row]))
-
-                click.echo("")
-
-        elif format_type == "markdown":
-            for facet_name in facet_names:
-                table = facet_tables[facet_name]
-
-                if not table:
-                    click.echo("%s: no data" % facet_name)
-                    continue
-
-                # Print header row
-                some_date = list(table.keys())[0]
-                header_row = ["date"] + sorted(table[some_date].keys())
-                click.echo(" | ".join(header_row))
-                click.echo(" | ".join(["-" * len(item) for item in header_row]))
-
-                for date, value_counts in table.items():
-                    row = [date] + [item[1] for item in sorted(value_counts.items())]
-                    click.echo(
-                        " | ".join(
-                            [clean_pipes(clean_whitespace(str(item))) for item in row]
-                        )
+                headers = [facet_name, "count"]
+                facet_data = facets[facet_name]
+                rows = [
+                    (item["term"], item["count"])
+                    for item in sorted(
+                        facet_data, key=lambda x: x["count"], reverse=True
                     )
+                ]
 
-                click.echo("")
+                if format_type == "tab":
+                    click.echo(tableize_tab(headers=headers, rows=rows))
+                else:
+                    click.echo(tableize_markdown(headers=headers, rows=rows))
+        return
 
-        elif format_type == "json":
-            click.echo(json.dumps(facet_tables))
+    # If it is in daily mode, then we have to do one facet for each day and
+    # compose the results.
 
-    return 0
+    # Figure out what facets we're doing
+    facet_names = params.get("_facets", ["signature"])
+
+    # Map of facet_name -> (map of date -> (map of value -> count))
+    facet_tables = {facet_name: {} for facet_name in facet_names}
+
+    for day_start_date, day_end_date in generate_dates(start_date, end_date):
+        params.update({"date": [">=%s" % day_start_date, "<%s" % day_end_date]})
+
+        if verbose:
+            click.echo("Params: %s" % params)
+
+        facets = fetch_supersearch_facets(
+            host, params, api_token=api_token, verbose=verbose
+        )
+
+        for facet_name in facet_names:
+            for item in facets.get(facet_name, []):
+                facet_tables[facet_name].setdefault(day_start_date, {})[
+                    item["term"]
+                ] = item["count"]
+
+    # Normalize the data--make sure table rows have all the values
+    for facet_name in facet_names:
+        values = set()
+
+        table = facet_tables[facet_name]
+        for date, value_counts in table.items():
+            values = values | set(value_counts.keys())
+
+        for date, value_counts in table.items():
+            missing_values = values - set(value_counts.keys())
+            for missing_value in missing_values:
+                value_counts[missing_value] = 0
+
+    # Print out the normalized data
+    if format_type == "json":
+        click.echo(json.dumps(facet_tables))
+
+    else:
+        for facet_name in facet_names:
+            table = facet_tables[facet_name]
+
+            if not table:
+                click.echo("%s: no data" % facet_name)
+                continue
+
+            some_date = list(table.keys())[0]
+            headers = ["date"] + sorted(table[some_date].keys())
+            rows = []
+            for date, value_counts in table.items():
+                rows.append([date] + [item[1] for item in sorted(value_counts.items())])
+
+            if format_type == "tab":
+                click.echo(tableize_tab(headers=headers, rows=rows))
+            elif format_type == "markdown":
+                click.echo(tableize_markdown(headers=headers, rows=rows))
+
+            click.echo("")
 
 
 if __name__ == "__main__":

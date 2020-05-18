@@ -9,7 +9,13 @@ from urllib.parse import urlparse, parse_qs
 
 import click
 
-from crashstats_tools.utils import DEFAULT_HOST, http_get, INFINITY, parse_args
+from crashstats_tools.utils import (
+    DEFAULT_HOST,
+    http_get,
+    INFINITY,
+    parse_args,
+    tableize_tab,
+)
 
 
 MAX_PAGE = 1000
@@ -111,6 +117,12 @@ def extract_supersearch_params(url):
     help='number of crash ids you want or "all" for all of them',
 )
 @click.option(
+    "--headers/--no-headers",
+    default=False,
+    show_default=True,
+    help="whether or not to show table headers",
+)
+@click.option(
     "--format",
     "format_type",
     default="tab",
@@ -122,7 +134,7 @@ def extract_supersearch_params(url):
     "--verbose/--no-verbose", default=False, help="whether to print debugging output"
 )
 @click.pass_context
-def supersearch(ctx, host, supersearch_url, num, format_type, verbose):
+def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose):
     """
     Fetches data from Crash Stats using Super Search
 
@@ -227,18 +239,23 @@ def supersearch(ctx, host, supersearch_url, num, format_type, verbose):
                 "No api token provided. Skipping dumps and personally identifiable information."
             )
 
-    for hit in fetch_supersearch(
+    records = []
+    hits = fetch_supersearch(
         host, params, num_results, api_token=api_token, verbose=verbose
-    ):
-        if format_type == "tab":
-            click.echo(
-                "\t".join(
-                    [clean_whitespace(hit[field]) for field in params["_columns"]]
-                )
-            )
+    )
+    for hit in hits:
+        records.append(
+            {field: clean_whitespace(hit[field]) for field in params["_columns"]}
+        )
 
-        elif format_type == "json":
-            click.echo(json.dumps(hit))
+    if format_type == "tab":
+        rows = [[item[field] for field in params["_columns"]] for item in records]
+        click.echo(
+            tableize_tab(headers=params["_columns"], rows=rows, show_headers=headers)
+        )
+
+    elif format_type == "json":
+        click.echo(json.dumps(records))
 
 
 if __name__ == "__main__":
