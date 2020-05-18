@@ -16,6 +16,21 @@ from requests.packages.urllib3.util.retry import Retry
 DEFAULT_HOST = "https://crash-stats.mozilla.org"
 
 
+WHITESPACE_TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
+
+
+def clean_whitespace(text):
+    text = text or ""
+    for s, replace in WHITESPACE_TO_CLEAN:
+        text = text.replace(s, replace)
+    return text
+
+
+def clean_pipes(text):
+    text = text or ""
+    return text.replace("|", "\\|")
+
+
 class JsonDTEncoder(json.JSONEncoder):
     """JSON encoder that handles datetimes
 
@@ -286,3 +301,40 @@ def parse_crashid(item):
             crash_id = path.split("/")[-1]
             if is_crash_id_valid(crash_id):
                 return crash_id
+
+
+def tableize_tab(headers, rows, show_headers=True):
+    """Generate output for a table using tab delimiters.
+
+    :param list-of-str headers: headers of the table
+    :param list-of-str rows: rows of the table
+
+    :returns: string
+
+    """
+    output = []
+    if show_headers:
+        output.append("\t".join([clean_whitespace(str(item)) for item in headers]))
+    for row in rows:
+        output.append("\t".join([clean_whitespace(str(item)) for item in row]))
+    return "\n".join(output)
+
+
+def tableize_markdown(headers, rows, show_headers=True):
+    """Generate output for a table using markdown.
+
+    :param list-of-str headers: headers of the table
+    :param list-of-str rows: rows of the table
+
+    :returns: string
+
+    """
+    output = []
+    if show_headers:
+        output.append(" | ".join(headers))
+        output.append(" | ".join(["-" * len(item) for item in headers]))
+    for row in rows:
+        output.append(
+            " | ".join([clean_pipes(clean_whitespace(str(item))) for item in row])
+        )
+    return "\n".join(output)
