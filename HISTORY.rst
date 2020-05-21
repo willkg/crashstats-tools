@@ -2,6 +2,15 @@
 History
 =======
 
+1.1.0 (May 21, 2020)
+====================
+
+Features:
+
+* Rewrite commands to use click instead of argparse for argument parsing (#17)
+* Add ``supersearchfacet`` command (#2)
+
+
 1.0.4 (January 7, 2020)
 =======================
 
@@ -10,7 +19,7 @@ Features:
 * Add support for CRASHID, bp-CRASHID, and
   https://crash-stats.mozilla.org/report/index/CRASHID formats of crash id in
   reprocess and fetch_data commands
-* Add tests for utils functions
+* Add tests for utils functions (#1)
 
 
 1.0.3 (October 23rd, 2019)
@@ -32,7 +41,7 @@ Bugs:
 
 Features:
 
-* add reprocess command
+* add reprocess command (#4)
 
 
 1.0.1 (July 31st, 2019)

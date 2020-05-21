@@ -1,9 +1,9 @@
 -e .
 
-black==19.3b0
-check-manifest==0.40
-flake8==3.7.9
-pytest==5.3.2
-tox==3.14.3
+black==19.10b0
+check-manifest==0.42
+flake8==3.8.1
+pytest==5.4.2
+tox==3.15.1
 twine==3.1.1
-wheel==0.33.6
+wheel==0.34.2

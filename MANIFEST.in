@@ -6,9 +6,7 @@ include requirements-dev.txt
 include tox.ini
 include Makefile
 
-recursive-include bin *.sh
-recursive-include crashstats_tools *.rst
-recursive-include crashstats_tools *.txt
-
+exclude tests
 recursive-exclude .circleci *
 recursive-exclude .github *
+recursive-exclude tests *
