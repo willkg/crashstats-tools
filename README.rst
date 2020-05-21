@@ -85,7 +85,38 @@ the signature::
 Results are formatted as tab-delimited by default. JSON output is also
 available.
 
-Note that this doesn't support Super Search aggregations.
+Note that this doesn't support Super Search aggregations--use
+``supersearchfacet`` for that.
+
+See Super Search API documentation for details on notation and fields:
+
+* https://crash-stats.mozilla.org/documentation/supersearch/
+* https://crash-stats.mozilla.org/documentation/supersearch/api/
+
+
+supersearchfacet
+----------------
+
+Performs facets and daily-facets.
+
+See the breakdown of crash reports by product for the last 7 days::
+
+    $ supersearchfacet --_facets=product
+
+See crashes broken down by product and down by day for the last 7 days::
+
+    $ supersearchfacet --daily --relative-range=7d --_facets=product
+
+See just Firefox crashes broken down by day for the last 14 days::
+
+    $ supersearchfacet --daily --relative-range=14d --_facets=product --product=Firefox
+
+Results are formatted as tab-delimited by default. Markdown and JSON output are
+also available.
+
+Get the table in Markdown for easy cut-and-paste into Markdown things::
+
+    $ supersearchfacet --daily --format=markdown --relative-range=14d --_facets=product --product=Firefox
 
 See Super Search API documentation for details on notation and fields:
 
