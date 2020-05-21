@@ -11,7 +11,7 @@ Command line tools and library for interacting with Crash Stats
 :Issue tracker: https://github.com/willkg/crashstats-tools/issues
 :License: MPLv2
 :Slack: ``#breakpad`` on Mozilla Slack
-:Community Participation Guidelines: `Guidelines <https://github.com/mozilla-services/antenna/blob/master/CODE_OF_CONDUCT.md>`_
+:Community Participation Guidelines: `<https://github.com/willkg/crashstats-tools/blob/master/CODE_OF_CONDUCT.md>`_
 
 
 Installing
