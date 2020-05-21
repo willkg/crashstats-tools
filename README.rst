@@ -257,6 +257,17 @@ I would do this::
     $ supersearch --date=">=2019-07-30" --date='<2019-07-31' --dom_fission_enabled='!__null__'
 
 
+Example 4
+---------
+
+I want to see number of crash reports for the last 14 days broken down by day
+and by product where ``DOMFissionEnabled`` exists in the crash report.
+
+I would do this::
+
+    $ supersearchfacet --daily --format=markdown --relative-range=14d --dom_fission_enabled='!__null__' --_facets=product
+
+
 Prior art and related projects
 ==============================
 
