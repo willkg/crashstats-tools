@@ -114,6 +114,7 @@ def extract_supersearch_params(url):
     "--num",
     default=100,
     show_default=True,
+    type=click.UNPROCESSED,
     help='number of crash ids you want or "all" for all of them',
 )
 @click.option(
