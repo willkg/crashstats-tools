@@ -18,3 +18,6 @@ clean:  ## Clean build artifacts
 lint:  ## Lint and black reformat files
 	black --target-version=${BLACKVERSION} ${PROJECT} tests setup.py
 	flake8 ${PROJECT} tests
+
+test:  ## Run tests
+	tox
