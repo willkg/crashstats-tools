@@ -183,7 +183,7 @@ def http_post(url, data, api_token=None):
 
 
 @total_ordering
-class Infinity(object):
+class Infinity:
     """Infinity is greater than anything else except other Infinities
 
     NOTE(willkg): There are multiple infinities and not all infinities are
