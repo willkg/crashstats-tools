@@ -32,22 +32,31 @@ def now():
 def parse_relative_date(text):
     """Takes a relative date specification and returns a timedelta."""
     parsed = RELATIVE_RE.match(text)
+    if parsed is None:
+        raise click.UsageError(f"'{text}' is not a valid relative date.")
 
     count = int(parsed.group(1))
     unit = parsed.group(2)
 
-    unit_to_arg = {"h": "hours", "d": "days", "w": "weeks", "m": "months"}
+    unit_to_arg = {"h": "hours", "d": "days", "w": "weeks"}
     return datetime.timedelta(**{unit_to_arg[unit]: count})
 
 
-def generate_dates(start_date, end_date):
-    start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    end_date = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+def generate_periods(period, start_date, end_date):
+    start_point = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+    end_point = datetime.datetime.strptime(end_date, "%Y-%m-%d")
 
-    while start_date <= end_date:
-        next_end_date = start_date + datetime.timedelta(days=1)
-        yield start_date.strftime("%Y-%m-%d"), next_end_date.strftime("%Y-%m-%d")
-        start_date = next_end_date
+    if period == "daily":
+        delta = datetime.timedelta(days=1)
+    elif period == "hourly":
+        delta = datetime.timedelta(hours=1)
+
+    while start_point <= end_point:
+        next_end_point = start_point + delta
+        yield start_point.strftime("%Y-%m-%d %H:%M:%S"), next_end_point.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+        start_point = next_end_point
 
 
 def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
@@ -106,7 +115,9 @@ def extract_supersearch_params(url):
     "--relative-range", default="7d", help="relative range ending on end-date"
 )
 @click.option(
-    "--daily/--no-daily", default=False, help="poorly named argument to get count/day"
+    "--period",
+    default="none",
+    help="period to facet on to get count/period; none, daily, hourly",
 )
 @click.option(
     "--format",
@@ -127,7 +138,7 @@ def supersearchfacet(
     end_date,
     start_date,
     relative_range,
-    daily,
+    period,
     format_type,
     verbose,
 ):
@@ -162,7 +173,7 @@ def supersearchfacet(
     https://crash-stats.mozilla.org/documentation/supersearch/api/
 
     This generates a table values and counts. If you want values and counts
-    over a series of days, use "--daily".
+    over a series of days, use "--period=daily".
 
     This requires an API token in order to download search and download personally
     identifiable information and security-sensitive data. It also reduces
@@ -184,6 +195,10 @@ def supersearchfacet(
     # Require at least one facet specified.
     parsed_args = parse_args(ctx.args)
     if "_facets" not in parsed_args:
+        click.echo(ctx.get_help())
+        ctx.exit(1)
+
+    if period not in ("none", "daily", "hourly"):
         click.echo(ctx.get_help())
         ctx.exit(1)
 
@@ -220,9 +235,9 @@ def supersearchfacet(
             datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
         ).strftime("%Y-%m-%d")
 
-    # If it's not daily, then we can do a single facet and print the data out
-    # and we're done.
-    if not daily:
+    # If there's no count/period, then we can do a single facet and print the
+    # data out and we're done.
+    if period == "none":
         params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
         if verbose:
@@ -255,8 +270,8 @@ def supersearchfacet(
                     click.echo(tableize_markdown(headers=headers, rows=rows))
         return
 
-    # If it is in daily mode, then we have to do one facet for each day and
-    # compose the results.
+    # If it is in count/period mode, then we have to do one facet for each
+    # period and compose the results.
 
     # Figure out what facets we're doing
     facet_names = params.get("_facets", ["signature"])
@@ -264,8 +279,8 @@ def supersearchfacet(
     # Map of facet_name -> (map of date -> (map of value -> count))
     facet_tables = {facet_name: {} for facet_name in facet_names}
 
-    for day_start_date, day_end_date in generate_dates(start_date, end_date):
-        params.update({"date": [">=%s" % day_start_date, "<%s" % day_end_date]})
+    for day_start, day_end in generate_periods(period, start_date, end_date):
+        params.update({"date": [">=%s" % day_start, "<%s" % day_end]})
 
         if verbose:
             click.echo("Params: %s" % params)
@@ -276,9 +291,9 @@ def supersearchfacet(
 
         for facet_name in facet_names:
             for item in facets.get(facet_name, []):
-                facet_tables[facet_name].setdefault(day_start_date, {})[
-                    item["term"]
-                ] = item["count"]
+                facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = item[
+                    "count"
+                ]
 
     # Normalize the data--make sure table rows have all the values
     for facet_name in facet_names:
