@@ -31,6 +31,12 @@ SLEEP_DEFAULT = 1
     help="how long in seconds to sleep before submitting the next group",
 )
 @click.option(
+    "--ruleset",
+    default="",
+    show_default=True,
+    help="processor pipeline ruleset to use for reprocessing these crash ids",
+)
+@click.option(
     "--allowmany/--no-allow-many",
     default=False,
     help=(
@@ -40,7 +46,7 @@ SLEEP_DEFAULT = 1
 )
 @click.argument("crashids", nargs=-1)
 @click.pass_context
-def reprocess(ctx, host, sleep, allowmany, crashids):
+def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
     """
     Sends specified crashes for reprocessing
 
@@ -105,6 +111,10 @@ def reprocess(ctx, host, sleep, allowmany, crashids):
             "Processing group ending with %s ... (%s/%s)"
             % (group[-1], i + 1, len(groups))
         )
+
+        if ruleset:
+            group = [f"{crashid}:{ruleset}" for crashid in group]
+
         resp = http_post(url, data={"crash_ids": group}, api_token=api_token)
         if resp.status_code != 200:
             click.echo(
