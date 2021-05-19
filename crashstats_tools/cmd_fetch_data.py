@@ -171,9 +171,14 @@ def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crash
     if not crashids and not sys.stdin.isatty():
         crashids = list(click.get_text_stream("stdin").readlines())
 
-    crashids = [parse_crashid(crashid.strip()) for crashid in crashids]
     for crashid in crashids:
         crashid = crashid.strip()
+
+        try:
+            crashid = parse_crashid(crashid).strip()
+        except ValueError:
+            click.echo(f"Crash id not recognized: {crashid}")
+            continue
 
         click.echo("Working on %s..." % crashid)
         fetch_crash(
