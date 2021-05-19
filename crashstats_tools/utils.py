@@ -287,6 +287,8 @@ def parse_crashid(item):
 
     :returns: crashid as str or None
 
+    :raises ValueError: if the crash id isn't recognized
+
     """
     if is_crash_id_valid(item):
         return item
@@ -301,6 +303,8 @@ def parse_crashid(item):
             crash_id = path.split("/")[-1]
             if is_crash_id_valid(crash_id):
                 return crash_id
+
+    raise ValueError(f"Not a valid crash id: {item}")
 
 
 def tableize_tab(headers, rows, show_headers=True):

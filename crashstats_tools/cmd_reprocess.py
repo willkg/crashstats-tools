@@ -72,9 +72,18 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
     if not crashids and not sys.stdin.isatty():
         crashids = list(click.get_text_stream("stdin").readlines())
 
-    crashids = [parse_crashid(crashid.strip()) for crashid in crashids]
+    to_process = []
+    for crashid in crashids:
+        crashid = crashid.strip()
+        try:
+            crashid = parse_crashid(crashid).strip()
+        except ValueError:
+            click.echo(f"Crash id not recognized: {crashid}")
+            continue
 
-    if not crashids:
+        to_process.append(crashid)
+
+    if not to_process:
         raise click.BadParameter(
             message="No crashids specified.",
             ctx=ctx,
@@ -82,7 +91,7 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
             param_hint="crashids",
         )
 
-    if len(crashids) > 10000 and not allowmany:
+    if len(to_process) > 10000 and not allowmany:
         click.echo(
             "You are trying to reprocess more than 10,000 crash reports at "
             "once. Please let us know on #breakpad on irc.mozilla.org "
@@ -96,10 +105,10 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
 
     click.echo(
         "Reprocessing %s crashes sleeping %s seconds between groups..."
-        % (len(crashids), sleep)
+        % (len(to_process), sleep)
     )
 
-    groups = list(chunked(crashids, CHUNK_SIZE))
+    groups = list(chunked(to_process, CHUNK_SIZE))
     for i, group in enumerate(groups):
         if i > 0:
             # NOTE(willkg): We sleep here because the webapp has a bunch of rate

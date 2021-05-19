@@ -38,8 +38,6 @@ def test_parse_args(args, expected):
 @pytest.mark.parametrize(
     "item, expected",
     [
-        ("", None),
-        ("foo", None),
         (
             "0b794045-87ec-4649-9ce1-73ec10191120",
             "0b794045-87ec-4649-9ce1-73ec10191120",
@@ -56,3 +54,9 @@ def test_parse_args(args, expected):
 )
 def test_parse_crashid(item, expected):
     assert parse_crashid(item) == expected
+
+
+@pytest.mark.parametrize("item", ["", "foo"])
+def test_parse_crashid_badids(item):
+    with pytest.raises(ValueError):
+        parse_crashid(item)
