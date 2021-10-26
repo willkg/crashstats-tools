@@ -22,7 +22,20 @@ def get_version():
     return re.search(vsre, version_file, re.M).group(1)
 
 
-install_requires = ["click", "requests", "more_itertools"]
+INSTALL_REQUIRES = ["click", "requests", "more_itertools"]
+
+EXTRAS_REQUIRE = {
+    "dev": [
+        "black==19.10b0",
+        "check-manifest==0.47",
+        "flake8==4.0.1",
+        "pytest==6.2.5",
+        "tox==3.24.4",
+        "tox-gh-actions==2.8.1",
+        "twine==3.4.2",
+        "wheel==0.37.0",
+    ]
+}
 
 
 setup(
@@ -36,8 +49,9 @@ setup(
     license="Mozilla Public License v2",
     packages=find_packages(),
     include_package_data=True,
-    install_requires=install_requires,
-    python_requires=">=3.6",
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRE,
+    python_requires=">=3.7",
     entry_points="""
         [console_scripts]
         fetch-data=crashstats_tools.cmd_fetch_data:fetch_data
@@ -49,10 +63,10 @@ setup(
         "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],

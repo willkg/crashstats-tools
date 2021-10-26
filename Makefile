@@ -1,6 +1,6 @@
 DEFAULT_GOAL := help
 PROJECT=crashstats_tools
-BLACKVERSION=py36
+BLACKVERSION=py37
 
 .PHONY: help
 help:
@@ -19,5 +19,14 @@ lint:  ## Lint and black reformat files
 	black --target-version=${BLACKVERSION} ${PROJECT} tests setup.py
 	flake8 ${PROJECT} tests
 
+.PHONY: test
 test:  ## Run tests
 	tox
+
+.PHONY: checkrot
+checkrot:  ## Check package rot for dev dependencies
+	python -m venv ./tmpvenv/
+	./tmpvenv/bin/pip install -U pip
+	./tmpvenv/bin/pip install '.[dev]'
+	./tmpvenv/bin/pip list -o
+	rm -rf ./tmpvenv/
