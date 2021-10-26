@@ -9,15 +9,15 @@ help:
 
 .PHONY: clean
 clean:  ## Clean build artifacts
-	rm -rf build dist ${PROJECT}.egg-info .tox .pytest-cache
+	rm -rf build dist src/${PROJECT}.egg-info .tox .pytest_cache/
 	rm -rf docs/_build/*
-	find ${PROJECT}/ tests/ -name __pycache__ | xargs rm -rf
-	find ${PROJECT}/ tests/ -name '*.pyc' | xargs rm -rf
+	find src tests/ -name __pycache__ | xargs rm -rf
+	find src tests/ -name '*.pyc' | xargs rm -rf
 
 .PHONY: lint
 lint:  ## Lint and black reformat files
-	black --target-version=${BLACKVERSION} ${PROJECT} tests setup.py
-	flake8 ${PROJECT} tests
+	black --target-version=${BLACKVERSION} src tests setup.py
+	flake8 src tests
 
 .PHONY: test
 test:  ## Run tests

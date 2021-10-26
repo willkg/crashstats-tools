@@ -8,7 +8,7 @@ import codecs
 import os
 import re
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def get_long_desc():
@@ -16,7 +16,7 @@ def get_long_desc():
 
 
 def get_version():
-    fn = os.path.join("crashstats_tools", "__init__.py")
+    fn = os.path.join("src", "crashstats_tools", "__init__.py")
     vsre = r"""^__version__ = ['"]([^'"]*)['"]"""
     version_file = codecs.open(fn, mode="r", encoding="utf-8").read()
     return re.search(vsre, version_file, re.M).group(1)
@@ -47,8 +47,9 @@ setup(
     maintainer_email="willkg@mozilla.com",
     url="https://github.com/willkg/crashstats-tools",
     license="Mozilla Public License v2",
-    packages=find_packages(),
     include_package_data=True,
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRE,
     python_requires=">=3.7",
