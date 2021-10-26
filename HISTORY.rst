@@ -2,6 +2,21 @@
 History
 =======
 
+1.2.0 (October 26th, 2021)
+==========================
+
+Changes:
+
+* Add support for Python 3.9 (#30)
+* Add support for Python 3.10 (#40)
+* Drop support for Python 3.6
+* Switch to ``src/`` layout (#31)
+* Rework supersearchfacet periods in supersearchfacet command so it support
+  other periods like "hourly"
+* Add support for specifying pipeline with reprocess command
+* Improve crash id argument handling to error out better
+
+
 1.1.1 (June 29th, 2020)
 =======================
 
