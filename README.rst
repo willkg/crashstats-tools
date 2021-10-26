@@ -286,7 +286,7 @@ Release process
 ===============
 
 1. Create branch
-2. Update version and release date in ``crashstats_tools/__init__.py``
+2. Update version and release date in ``src/crashstats_tools/__init__.py``
 3. Update ``HISTORY.rst``
 4. Push the branch, create a PR, review it, merge it
 5. Create a signed tag, push to github::
@@ -298,7 +298,7 @@ Release process
 
      python setup.py sdist bdist_wheel
 
-   Make sure to use Python 3 with an updates ``requirements-dev.txt``.
+   Make sure to use Python 3 with dev requirements installed.
 
 7. Upload to PyPI::
 
