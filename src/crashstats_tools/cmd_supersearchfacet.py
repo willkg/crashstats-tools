@@ -67,7 +67,7 @@ def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
     :arg str api_token: the API token to use or None
     :arg bool verbose: whether or not to print verbose things
 
-    :returns: generator of crash ids
+    :returns: dict with "total" and "facets" keys
 
     """
     url = host + "/api/SuperSearch/"
@@ -78,7 +78,11 @@ def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
         click.echo("%s %s" % (url, params))
 
     resp = http_get(url=url, params=params, api_token=api_token)
-    return resp.json()["facets"]
+    data = resp.json()
+    return {
+        "total": data["total"],
+        "facets": data["facets"],
+    }
 
 
 def extract_supersearch_params(url):
@@ -243,26 +247,32 @@ def supersearchfacet(
         if verbose:
             click.echo("Params: %s" % params)
 
-        facets = fetch_supersearch_facets(
+        facet_data = fetch_supersearch_facets(
             host, params, api_token=api_token, verbose=verbose
         )
 
         if format_type == "json":
-            click.echo(json.dumps(facets))
+            click.echo(json.dumps(facet_data))
 
         else:
+            remaining = facet_data["total"]
+            facets = facet_data["facets"]
             for facet_name in params.get("_facets", facets.keys()):
                 if facet_name not in facets:
                     continue
 
                 headers = [facet_name, "count"]
-                facet_data = facets[facet_name]
+                facet_item_data = facets[facet_name]
                 rows = [
                     (item["term"], item["count"])
                     for item in sorted(
-                        facet_data, key=lambda x: x["count"], reverse=True
+                        facet_item_data, key=lambda x: x["count"], reverse=True
                     )
                 ]
+                remaining -= sum([item["count"] for item in facet_item_data])
+
+                if remaining:
+                    rows.append(("--", remaining))
 
                 if format_type == "tab":
                     click.echo(tableize_tab(headers=headers, rows=rows))
@@ -285,15 +295,19 @@ def supersearchfacet(
         if verbose:
             click.echo("Params: %s" % params)
 
-        facets = fetch_supersearch_facets(
+        facet_data = fetch_supersearch_facets(
             host, params, api_token=api_token, verbose=verbose
         )
 
+        remaining = facet_data["total"]
+        facets = facet_data["facets"]
+
         for facet_name in facet_names:
             for item in facets.get(facet_name, []):
-                facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = item[
-                    "count"
-                ]
+                count = item["count"]
+                facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = count
+                remaining -= count
+            facet_tables[facet_name].setdefault(day_start, {})["--"] = remaining
 
     # Normalize the data--make sure table rows have all the values
     for facet_name in facet_names:
