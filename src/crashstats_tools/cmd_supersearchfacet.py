@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
+import functools
 import json
 import logging
 import os
@@ -23,6 +24,25 @@ from crashstats_tools.utils import (
 RELATIVE_RE = re.compile(r"(\d+)([hdwm])", re.IGNORECASE)
 
 DEFAULT_NOW = datetime.datetime.now().strftime("%Y-%m-%d")
+
+
+@functools.total_ordering
+class AlwaysFirst:
+    def __eq__(self, other):
+        # Two AlwaysFirst instances are always equal
+        return type(other) == type(self)
+
+    def __lt__(self, other):
+        # This is always less than other
+        return True
+
+
+def thing_to_key(item):
+    if isinstance(item, (list, tuple)):
+        item = item[0]
+    if item == "--":
+        return AlwaysFirst()
+    return item
 
 
 def now():
@@ -335,10 +355,16 @@ def supersearchfacet(
                 continue
 
             some_date = list(table.keys())[0]
-            headers = ["date"] + sorted(table[some_date].keys())
+            headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
             rows = []
             for date, value_counts in table.items():
-                rows.append([date] + [item[1] for item in sorted(value_counts.items())])
+                rows.append(
+                    [date]
+                    + [
+                        item[1]
+                        for item in sorted(value_counts.items(), key=thing_to_key)
+                    ]
+                )
 
             if format_type == "tab":
                 click.echo(tableize_tab(headers=headers, rows=rows))
