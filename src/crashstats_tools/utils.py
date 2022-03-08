@@ -335,8 +335,8 @@ def tableize_markdown(headers, rows, show_headers=True):
     """
     output = []
     if show_headers:
-        output.append(" | ".join(headers))
-        output.append(" | ".join(["-" * len(item) for item in headers]))
+        output.append(" | ".join([str(header) for header in headers]))
+        output.append(" | ".join(["-" * len(str(item)) for item in headers]))
     for row in rows:
         output.append(
             " | ".join([clean_pipes(clean_whitespace(str(item))) for item in row])
