@@ -37,7 +37,7 @@ SLEEP_DEFAULT = 1
     help="processor pipeline ruleset to use for reprocessing these crash ids",
 )
 @click.option(
-    "--allowmany/--no-allow-many",
+    "--allow-many/--no-allow-many",
     default=False,
     help=(
         "don't prompt user about letting us know about reprocessing "
