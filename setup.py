@@ -22,18 +22,19 @@ def get_version():
     return re.search(vsre, version_file, re.M).group(1)
 
 
-INSTALL_REQUIRES = ["click", "requests", "more_itertools"]
+INSTALL_REQUIRES = ["click", "more_itertools", "requests", "rich"]
 
 EXTRAS_REQUIRE = {
     "dev": [
-        "black==19.10b0",
-        "check-manifest==0.47",
+        "black==22.6.0",
+        "build==0.8.0",
+        "check-manifest==0.48",
         "flake8==4.0.1",
-        "pytest==6.2.5",
-        "tox==3.24.4",
-        "tox-gh-actions==2.8.1",
-        "twine==3.4.2",
-        "wheel==0.37.0",
+        "pytest==7.1.2",
+        "tox==3.25.0",
+        "tox-gh-actions==2.9.1",
+        "twine==4.0.1",
+        "wheel==0.37.1",
     ]
 }
 

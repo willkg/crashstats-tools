@@ -11,6 +11,8 @@ import re
 from urllib.parse import urlparse, parse_qs
 
 import click
+from rich.console import Console
+from rich.table import Table
 
 from crashstats_tools.utils import (
     DEFAULT_HOST,
@@ -79,7 +81,7 @@ def generate_periods(period, start_date, end_date):
         start_point = next_end_point
 
 
-def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
+def fetch_supersearch_facets(console, host, params, api_token=None, verbose=False):
     """Generator that returns Super Search results
 
     :arg str host: the host to query
@@ -95,7 +97,7 @@ def fetch_supersearch_facets(host, params, api_token=None, verbose=False):
     params["_results_number"] = 0
 
     if verbose:
-        click.echo("%s %s" % (url, params))
+        console.print(f"{url} {params}")
 
     resp = http_get(url=url, params=params, api_token=api_token)
     data = resp.json()
@@ -141,18 +143,28 @@ def extract_supersearch_params(url):
 @click.option(
     "--period",
     default="none",
-    help="period to facet on to get count/period; none, daily, hourly",
+    show_default=True,
+    type=click.Choice(["none", "daily", "hourly"], case_sensitive=False),
+    help="period to facet on to get count/period",
 )
 @click.option(
     "--format",
     "format_type",
-    default="tab",
+    default="table",
     show_default=True,
-    type=click.Choice(["tab", "markdown", "json"], case_sensitive=False),
+    type=click.Choice(["table", "tab", "markdown", "json"], case_sensitive=False),
     help="format to print output",
 )
 @click.option(
     "--verbose/--no-verbose", default=False, help="whether to print debugging output"
+)
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help=(
+        "whether or not to colorize output; note that color is shut off "
+        "when stdout is not an interactive terminal automatically"
+    ),
 )
 @click.pass_context
 def supersearchfacet(
@@ -165,6 +177,7 @@ def supersearchfacet(
     period,
     format_type,
     verbose,
+    color,
 ):
     """Fetches facet data from Crash Stats using Super Search
 
@@ -215,15 +228,15 @@ def supersearchfacet(
 
     https://crash-stats.mozilla.org/documentation/memory_dump_access/
     """
+    if not color:
+        console = Console(color_system=None)
+    else:
+        console = Console()
 
     # Require at least one facet specified.
     parsed_args = parse_args(ctx.args)
     if "_facets" not in parsed_args:
-        click.echo(ctx.get_help())
-        ctx.exit(1)
-
-    if period not in ("none", "daily", "hourly"):
-        click.echo(ctx.get_help())
+        raise click.ClickException("At least one _facets must be specified.")
         ctx.exit(1)
 
     if verbose:
@@ -245,12 +258,16 @@ def supersearchfacet(
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if verbose:
         if api_token:
-            click.echo(
-                "Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4))
-            )
+            masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
+            console.print(f"Using api token: {masked_token}")
         else:
-            click.echo(
-                "No api token provided. Skipping personally identifiable information."
+            console.print(
+                "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+                + "environment.[/yellow]"
+            )
+            console.print(
+                "[yellow]Skipping dumps and personally identifiable "
+                + "information.[/yellow]"
             )
 
     if not start_date:
@@ -265,39 +282,51 @@ def supersearchfacet(
         params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
         if verbose:
-            click.echo("Params: %s" % params)
+            console.print(f"Params: {params}")
 
         facet_data = fetch_supersearch_facets(
-            host, params, api_token=api_token, verbose=verbose
+            console=console,
+            host=host,
+            params=params,
+            api_token=api_token,
+            verbose=verbose,
         )
 
         if format_type == "json":
-            click.echo(json.dumps(facet_data))
+            console.print_json(json.dumps(facet_data))
+            return
 
+        remaining = facet_data["total"]
+        facets = facet_data["facets"]
+        for facet_name in params.get("_facets", facets.keys()):
+            if facet_name not in facets:
+                continue
+
+            headers = [facet_name, "count"]
+            facet_item_data = facets[facet_name]
+            rows = [
+                (item["term"], item["count"])
+                for item in sorted(
+                    facet_item_data, key=lambda x: x["count"], reverse=True
+                )
+            ]
+            remaining -= sum([item["count"] for item in facet_item_data])
+
+            if remaining:
+                rows.append(("--", remaining))
+
+        if format_type == "table":
+            table = Table(show_edge=False)
+            for column in headers:
+                table.add_column(column, justify="left")
+            for row in rows:
+                table.add_row(*[str(cell) for cell in row])
+            console.print(table)
+
+        elif format_type == "tab":
+            console.print(tableize_tab(headers=headers, rows=rows))
         else:
-            remaining = facet_data["total"]
-            facets = facet_data["facets"]
-            for facet_name in params.get("_facets", facets.keys()):
-                if facet_name not in facets:
-                    continue
-
-                headers = [facet_name, "count"]
-                facet_item_data = facets[facet_name]
-                rows = [
-                    (item["term"], item["count"])
-                    for item in sorted(
-                        facet_item_data, key=lambda x: x["count"], reverse=True
-                    )
-                ]
-                remaining -= sum([item["count"] for item in facet_item_data])
-
-                if remaining:
-                    rows.append(("--", remaining))
-
-                if format_type == "tab":
-                    click.echo(tableize_tab(headers=headers, rows=rows))
-                else:
-                    click.echo(tableize_markdown(headers=headers, rows=rows))
+            console.print(tableize_markdown(headers=headers, rows=rows))
         return
 
     # If it is in count/period mode, then we have to do one facet for each
@@ -313,10 +342,14 @@ def supersearchfacet(
         params.update({"date": [">=%s" % day_start, "<%s" % day_end]})
 
         if verbose:
-            click.echo("Params: %s" % params)
+            console.print(f"Params: {params}")
 
         facet_data = fetch_supersearch_facets(
-            host, params, api_token=api_token, verbose=verbose
+            console=console,
+            host=host,
+            params=params,
+            api_token=api_token,
+            verbose=verbose,
         )
 
         remaining = facet_data["total"]
@@ -344,34 +377,36 @@ def supersearchfacet(
 
     # Print out the normalized data
     if format_type == "json":
-        click.echo(json.dumps(facet_tables))
+        console.print_json(json.dumps(facet_tables))
+        return
 
-    else:
-        for facet_name in facet_names:
-            table = facet_tables[facet_name]
+    for facet_name in facet_names:
+        table = facet_tables[facet_name]
 
-            if not table:
-                click.echo("%s: no data" % facet_name)
-                continue
+        if not table:
+            console.print(f"{facet_name}: no data")
+            continue
 
-            some_date = list(table.keys())[0]
-            headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
-            rows = []
-            for date, value_counts in table.items():
-                rows.append(
-                    [date]
-                    + [
-                        item[1]
-                        for item in sorted(value_counts.items(), key=thing_to_key)
-                    ]
-                )
+        some_date = list(table.keys())[0]
+        headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
+        rows = []
+        for date, value_counts in table.items():
+            rows.append(
+                [date]
+                + [item[1] for item in sorted(value_counts.items(), key=thing_to_key)]
+            )
 
-            if format_type == "tab":
-                click.echo(tableize_tab(headers=headers, rows=rows))
-            elif format_type == "markdown":
-                click.echo(tableize_markdown(headers=headers, rows=rows))
-
-            click.echo("")
+        if format_type == "table":
+            table = Table(show_edge=False)
+            for column in headers:
+                table.add_column(column, justify="left")
+            for row in rows:
+                table.add_row(*[str(cell) for cell in row])
+            console.print(table)
+        elif format_type == "tab":
+            console.print(tableize_tab(headers=headers, rows=rows))
+        elif format_type == "markdown":
+            console.print(tableize_markdown(headers=headers, rows=rows))
 
 
 if __name__ == "__main__":

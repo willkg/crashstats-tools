@@ -8,6 +8,8 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 import click
+from rich.console import Console
+from rich.table import Table
 
 from crashstats_tools.utils import (
     DEFAULT_HOST,
@@ -32,7 +34,9 @@ def clean_whitespace(text):
     return text
 
 
-def fetch_supersearch(host, params, num_results, api_token=None, verbose=False):
+def fetch_supersearch(
+    console, host, params, num_results, api_token=None, verbose=False
+):
     """Generator that returns Super Search results
 
     :arg str host: the host to query
@@ -55,7 +59,7 @@ def fetch_supersearch(host, params, num_results, api_token=None, verbose=False):
     crashids_count = 0
     while True:
         if verbose:
-            print(url, params)
+            console.print(url, params)
 
         resp = http_get(url=url, params=params, api_token=api_token)
         hits = resp.json()["hits"]
@@ -126,16 +130,24 @@ def extract_supersearch_params(url):
 @click.option(
     "--format",
     "format_type",
-    default="tab",
+    default="table",
     show_default=True,
-    type=click.Choice(["tab", "json"], case_sensitive=False),
+    type=click.Choice(["table", "tab", "json"], case_sensitive=False),
     help="format to print output",
 )
 @click.option(
     "--verbose/--no-verbose", default=False, help="whether to print debugging output"
 )
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help=(
+        "whether or not to colorize output; note that color is shut off "
+        "when stdout is not an interactive terminal automatically"
+    ),
+)
 @click.pass_context
-def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose):
+def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, color):
     """
     Fetches data from Crash Stats using Super Search
 
@@ -189,6 +201,10 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose):
 
     https://crash-stats.mozilla.org/documentation/memory_dump_access/
     """
+    if not color:
+        console = Console(color_system=None)
+    else:
+        console = Console()
 
     if verbose:
         # Set logging to DEBUG because this picks up debug logging from
@@ -225,38 +241,63 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose):
                 "num", 'num needs to be an integer or "all"', ctx=ctx
             )
 
+    console = Console()
+    if not console.is_terminal and format_type == "table":
+        # Switch to tab if stdout is not a terminal. This makes it more
+        # convenient for piping supersearch output
+        format_type = "tab"
+
     if verbose:
-        click.echo("Params: %s" % params)
+        console.print(f"Params: {params}")
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if verbose:
         if api_token:
-            click.echo(
-                "Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4))
-            )
+            masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
+            console.print(f"Using api token: {masked_token}")
         else:
-            click.echo(
-                "No api token provided. Skipping dumps and personally identifiable information."
+            console.print(
+                "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+                + "environment.[/yellow]"
+            )
+            console.print(
+                "[yellow]Skipping dumps and personally identifiable "
+                + "information.[/yellow]"
             )
 
     records = []
     hits = fetch_supersearch(
-        host, params, num_results, api_token=api_token, verbose=verbose
+        console=console,
+        host=host,
+        params=params,
+        num_results=num_results,
+        api_token=api_token,
+        verbose=verbose,
     )
     for hit in hits:
         records.append(
             {field: clean_whitespace(hit[field]) for field in params["_columns"]}
         )
 
-    if format_type == "tab":
+    if format_type == "table":
+        table = Table(show_edge=False)
+        for column in params["_columns"]:
+            table.add_column(column, justify="left")
         rows = [[item[field] for field in params["_columns"]] for item in records]
-        click.echo(
+        for row in rows:
+            table.add_row(*row)
+
+        console.print(table)
+
+    elif format_type == "tab":
+        rows = [[item[field] for field in params["_columns"]] for item in records]
+        console.print(
             tableize_tab(headers=params["_columns"], rows=rows, show_headers=headers)
         )
 
     elif format_type == "json":
-        click.echo(json.dumps(records))
+        console.print_json(json.dumps(records))
 
 
 if __name__ == "__main__":

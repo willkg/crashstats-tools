@@ -7,6 +7,7 @@ import sys
 import time
 
 import click
+from rich.console import Console
 from more_itertools import chunked
 
 from crashstats_tools.utils import DEFAULT_HOST, http_post, parse_crashid
@@ -44,9 +45,17 @@ SLEEP_DEFAULT = 1
         "more than 10,000 crashes"
     ),
 )
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help=(
+        "whether or not to colorize output; note that color is shut off "
+        "when stdout is not an interactive terminal automatically"
+    ),
+)
 @click.argument("crashids", nargs=-1)
 @click.pass_context
-def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
+def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     """
     Sends specified crashes for reprocessing
 
@@ -61,13 +70,26 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
     Also, if you're processing a lot of crashes, you should let us know before
     you do it.
     """
+    if not color:
+        console = Console(color_system=None)
+        error_console = Console(stderr=True, color_system=None)
+    else:
+        console = Console()
+        error_console = Console(stderr=True)
+
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if not api_token:
-        click.echo("You need to set CRASHSTATS_API_TOKEN in the environment.")
-        return 1
+        error_console.print(
+            "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+            + "environment.[/yellow]"
+        )
+        ctx.exit(1)
+
+    masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
+    console.print(f"Using api token: {masked_token}")
 
     url = host.rstrip("/") + "/api/Reprocessing/"
-    click.echo("Sending reprocessing requests to: %s" % url)
+    console.print(f"[bold green]Sending reprocessing requests to: {url}[/bold green]")
 
     if not crashids and not sys.stdin.isatty():
         crashids = list(click.get_text_stream("stdin").readlines())
@@ -78,7 +100,7 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
         try:
             crashid = parse_crashid(crashid).strip()
         except ValueError:
-            click.echo(f"Crash id not recognized: {crashid}")
+            console.print(f"[yellow]Crash id not recognized: {crashid}[/yellow]")
             continue
 
         to_process.append(crashid)
@@ -91,22 +113,23 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
             param_hint="crashids",
         )
 
-    if len(to_process) > 10000 and not allowmany:
-        click.echo(
-            "You are trying to reprocess more than 10,000 crash reports at "
-            "once. Please let us know on #breakpad on irc.mozilla.org "
-            "before you do this."
-        )
-        click.echo("")
-        click.echo("Pass in --allowmany argument.")
-        click.echo("")
-        click.echo("Exiting.")
-        ctx.exit(1)
-
-    click.echo(
-        "Reprocessing %s crashes sleeping %s seconds between groups..."
-        % (len(to_process), sleep)
+    console.print(
+        f"[bold green]Reprocessing {len(to_process)} crashes sleeping {sleep} "
+        + "seconds between groups...[/bold green]"
     )
+
+    if len(to_process) > 10000 and not allow_many:
+        console.print(
+            "[yellow]You are trying to reprocess more than 10,000 crash reports "
+            + "at once.[/yellow]"
+        )
+        console.print(
+            "[yellow]Please let us know on #crashreporting on Matrix before you "
+            + "do this.[/yellow]"
+        )
+        console.print("")
+        console.print("[yellow]Use --allow-many argument to reprocess.[/yellow]")
+        ctx.exit(1)
 
     groups = list(chunked(to_process, CHUNK_SIZE))
     for i, group in enumerate(groups):
@@ -116,9 +139,12 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
             # have to do this.
             time.sleep(sleep)
 
-        click.echo(
-            "Processing group ending with %s ... (%s/%s)"
-            % (group[-1], i + 1, len(groups))
+        last_crashid = group[-1]
+        this_group = i + 1
+        total_groups = len(groups)
+        console.print(
+            f"Processing group ending with {last_crashid} ... "
+            + f"({this_group}/{total_groups})"
         )
 
         if ruleset:
@@ -126,12 +152,13 @@ def reprocess(ctx, host, sleep, ruleset, allowmany, crashids):
 
         resp = http_post(url, data={"crash_ids": group}, api_token=api_token)
         if resp.status_code != 200:
-            click.echo(
-                "Got back non-200 status code: %s %s" % (resp.status_code, resp.content)
+            console.print(
+                "[yellow]Got back non-200 status code: "
+                + f"{resp.status_code} {resp.content}[/yellow]"
             )
             continue
 
-    click.echo("Done!")
+    console.print("[bold green]Done![/bold green]")
 
 
 if __name__ == "__main__":

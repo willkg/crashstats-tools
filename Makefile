@@ -17,7 +17,7 @@ clean:  ## Clean build artifacts
 .PHONY: lint
 lint:  ## Lint and black reformat files
 	black --target-version=${BLACKVERSION} src tests setup.py
-	flake8 src tests
+	flake8 setup.py src tests
 
 .PHONY: test
 test:  ## Run tests

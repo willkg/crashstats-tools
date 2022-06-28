@@ -2,19 +2,30 @@
 History
 =======
 
+1.3.0 (In development)
+======================
+
+Changes:
+
+* Improve output using rich. (#47)
+* Add --allow-many argument to reprocess.
+* Fix non-string sorting.
+* Add "remainder" column in supersearchfacet.
+
+
 1.2.0 (October 26th, 2021)
 ==========================
 
 Changes:
 
-* Add support for Python 3.9 (#30)
-* Add support for Python 3.10 (#40)
-* Drop support for Python 3.6
+* Add support for Python 3.9. (#30)
+* Add support for Python 3.10. (#40)
+* Drop support for Python 3.6.
 * Switch to ``src/`` layout (#31)
 * Rework supersearchfacet periods in supersearchfacet command so it support
-  other periods like "hourly"
-* Add support for specifying pipeline with reprocess command
-* Improve crash id argument handling to error out better
+  other periods like "hourly".
+* Add support for specifying pipeline with reprocess command.
+* Improve crash id argument handling to error out better.
 
 
 1.1.1 (June 29th, 2020)
@@ -30,8 +41,8 @@ Bugs:
 
 Features:
 
-* Rewrite commands to use click instead of argparse for argument parsing (#17)
-* Add ``supersearchfacet`` command (#2)
+* Rewrite commands to use click instead of argparse for argument parsing. (#17)
+* Add ``supersearchfacet`` command. (#2)
 
 
 1.0.4 (January 7, 2020)
@@ -41,8 +52,8 @@ Features:
 
 * Add support for CRASHID, bp-CRASHID, and
   https://crash-stats.mozilla.org/report/index/CRASHID formats of crash id in
-  reprocess and fetch_data commands
-* Add tests for utils functions (#1)
+  reprocess and fetch_data commands.
+* Add tests for utils functions. (#1)
 
 
 1.0.3 (October 23rd, 2019)
@@ -64,7 +75,7 @@ Bugs:
 
 Features:
 
-* add reprocess command (#4)
+* Add ``reprocess`` command. (#4)
 
 
 1.0.1 (July 31st, 2019)
@@ -72,14 +83,10 @@ Features:
 
 Bugs:
 
-* fix saving ``dump_names``
+* Fix saving ``dump_names``.
 
 
 1.0.0 (July 31st, 2019)
 =======================
 
-Initial writing.
-
-* project scaffolding
-* supersearch command
-* fetch-data command
+* Initial writing with ``supersearch`` and ``fetch-data`` commands.

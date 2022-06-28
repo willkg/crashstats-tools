@@ -7,6 +7,7 @@ import os
 import sys
 
 import click
+from rich.console import Console
 
 from crashstats_tools.utils import DEFAULT_HOST, http_get, JsonDTEncoder, parse_crashid
 
@@ -17,7 +18,7 @@ def create_dir_if_needed(d):
 
 
 def fetch_crash(
-    host, fetchraw, fetchdumps, fetchprocessed, outputdir, api_token, crash_id
+    console, host, fetchraw, fetchdumps, fetchprocessed, outputdir, api_token, crash_id
 ):
     """Fetch crash data and save to correct place on the file system
 
@@ -26,7 +27,7 @@ def fetch_crash(
     """
     if fetchraw:
         # Fetch raw crash metadata
-        click.echo("Fetching raw %s" % crash_id)
+        console.print(f"[bold green]Fetching raw {crash_id}[/bold green]")
         resp = http_get(
             url=host + "/api/RawCrash/",
             params={"crash_id": crash_id, "format": "meta"},
@@ -50,7 +51,9 @@ def fetch_crash(
 
         # Fetch dumps
         for dump_name in dump_names:
-            click.echo("Fetching dump %s/%s" % (crash_id, dump_name))
+            console.print(
+                f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green]"
+            )
 
             # We store "upload_file_minidump" as "dump", so we need to use that
             # name when requesting from the RawCrash api
@@ -66,8 +69,8 @@ def fetch_crash(
 
             if resp.status_code != 200:
                 raise Exception(
-                    "Something unexpected happened. status_code %s, content %s"
-                    % (resp.status_code, resp.content)
+                    f"Something unexpected happened. status_code {resp.status_code}, "
+                    + f"content {resp.content}"
                 )
 
             fn = os.path.join(outputdir, dump_name, crash_id)
@@ -77,7 +80,7 @@ def fetch_crash(
 
     if fetchprocessed:
         # Fetch processed crash data
-        click.echo("Fetching processed %s" % crash_id)
+        console.print(f"[bold green]Fetching processed {crash_id}[/bold green]")
         resp = http_get(
             host + "/api/ProcessedCrash/",
             params={"crash_id": crash_id, "format": "meta"},
@@ -115,10 +118,20 @@ def fetch_crash(
     default=False,
     help="whether or not to save processed crash data",
 )
+@click.option(
+    "--color/--no-color",
+    default=True,
+    help=(
+        "whether or not to colorize output; note that color is shut off "
+        "when stdout is not an interactive terminal automatically"
+    ),
+)
 @click.argument("outputdir")
 @click.argument("crashids", nargs=-1)
 @click.pass_context
-def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crashids):
+def fetch_data(
+    ctx, host, fetchraw, fetchdumps, fetchprocessed, color, outputdir, crashids
+):
     """
     Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
 
@@ -143,29 +156,35 @@ def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crash
 
     https://crash-stats.mozilla.org/documentation/memory_dump_access/
     """
+    if not color:
+        console = Console(color_system=None)
+    else:
+        console = Console()
 
     if fetchdumps and not fetchraw:
         raise click.BadOptionUsage(
             "fetchdumps",
-            "You cannot fetch dumps without also fetching the raw crash. Exiting.",
+            "You cannot fetch dumps without also fetching the raw crash.",
             ctx=ctx,
         )
 
     # Validate outputdir and exit if it doesn't exist or isn't a directory
     if os.path.exists(outputdir) and not os.path.isdir(outputdir):
-        raise click.ClickException(
-            "%s is not a directory. Please fix. Exiting." % outputdir
-        )
+        raise click.ClickException(f"{outputdir} is not a directory.")
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if api_token:
-        click.echo(
-            "Using api token: %s%s" % (api_token[:4], "x" * (len(api_token) - 4))
-        )
+        masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
+        console.print(f"Using api token: {masked_token}")
     else:
-        click.echo(
-            "No api token provided. Skipping dumps and personally identifiable information."
+        console.print(
+            "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+            + "environment.[/yellow]"
+        )
+        console.print(
+            "[yellow]Skipping dumps and personally identifiable "
+            + "information.[/yellow]"
         )
 
     if not crashids and not sys.stdin.isatty():
@@ -177,11 +196,12 @@ def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crash
         try:
             crashid = parse_crashid(crashid).strip()
         except ValueError:
-            click.echo(f"Crash id not recognized: {crashid}")
+            console.print(f"[yellow]Crash id not recognized: {crashid}[/yellow]")
             continue
 
-        click.echo("Working on %s..." % crashid)
+        console.print(f"[bold green]Working on {crashid}...[/bold green]")
         fetch_crash(
+            console=console,
             host=host,
             fetchraw=fetchraw,
             fetchdumps=fetchdumps if api_token else False,
@@ -190,7 +210,7 @@ def fetch_data(ctx, host, fetchraw, fetchdumps, fetchprocessed, outputdir, crash
             api_token=api_token,
             crash_id=crashid,
         )
-    click.echo("Done!")
+    console.print("[bold green]Done![/bold green]")
 
 
 if __name__ == "__main__":
