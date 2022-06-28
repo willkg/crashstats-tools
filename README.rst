@@ -10,7 +10,7 @@ Command line tools and library for interacting with Crash Stats
 :Changelog: Check the ``HISTORY.rst`` file
 :Issue tracker: https://github.com/willkg/crashstats-tools/issues
 :License: MPLv2
-:Slack: ``#breakpad`` on Mozilla Slack
+:Chat: `#crashreporting matrix channel <https://chat.mozilla.org/#/room/#crashreporting:mozilla.org>`__
 :Community Participation Guidelines: `<https://github.com/willkg/crashstats-tools/blob/main/CODE_OF_CONDUCT.md>`_
 
 
@@ -116,7 +116,8 @@ also available.
 
 Get the table in Markdown for easy cut-and-paste into Markdown things::
 
-    $ supersearchfacet --daily --format=markdown --relative-range=14d --_facets=product --product=Firefox
+    $ supersearchfacet --daily --format=markdown --relative-range=14d --_facets=product \
+        --product=Firefox
 
 See Super Search API documentation for details on notation and fields:
 
@@ -254,7 +255,8 @@ I want to get a list of crash ids for today (2019-07-30) where
 
 I would do this::
 
-    $ supersearch --date=">=2019-07-30" --date='<2019-07-31' --dom_fission_enabled='!__null__'
+    $ supersearch --date=">=2019-07-30" --date='<2019-07-31' \
+        --dom_fission_enabled='!__null__'
 
 
 Example 4
@@ -265,7 +267,8 @@ and by product where ``DOMFissionEnabled`` exists in the crash report.
 
 I would do this::
 
-    $ supersearchfacet --daily --format=markdown --relative-range=14d --dom_fission_enabled='!__null__' --_facets=product
+    $ supersearchfacet --period=daily --format=markdown --relative-range=14d \
+        --dom_fission_enabled='!__null__' --_facets=product
 
 
 Prior art and related projects
@@ -280,26 +283,3 @@ https://github.com/mozilla-services/socorro
     environment which includes a series of commands for manipulating data.
 
     https://socorro.readthedocs.io/en/latest/service/processor.html#processing-crashes
-
-
-Release process
-===============
-
-1. Create branch
-2. Update version and release date in ``src/crashstats_tools/__init__.py``
-3. Update ``HISTORY.rst``
-4. Push the branch, create a PR, review it, merge it
-5. Create a signed tag, push to github::
-
-     git tag -s v0.1.0
-     git push --tags REMOTE TAGNAME
-
-6. Build::
-
-     python setup.py sdist bdist_wheel
-
-   Make sure to use Python 3 with dev requirements installed.
-
-7. Upload to PyPI::
-
-     twine upload dist/*
