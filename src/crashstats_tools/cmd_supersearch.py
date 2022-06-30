@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.table import Table
 
 from crashstats_tools.utils import (
+    escape_whitespace,
     DEFAULT_HOST,
     http_get,
     INFINITY,
@@ -21,17 +22,6 @@ from crashstats_tools.utils import (
 
 
 MAX_PAGE = 1000
-
-
-TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
-
-
-def clean_whitespace(text):
-    text = text or ""
-
-    for s, replace in TO_CLEAN:
-        text = text.replace(s, replace)
-    return text
 
 
 def fetch_supersearch(
@@ -277,7 +267,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     )
     for hit in hits:
         records.append(
-            {field: clean_whitespace(hit[field]) for field in params["_columns"]}
+            {field: escape_whitespace(hit[field]) for field in params["_columns"]}
         )
 
     if format_type == "table":

@@ -187,6 +187,13 @@ def fetch_data(
             + "information.[/yellow]"
         )
 
+    if fetchdumps and not api_token:
+        raise click.BadOptionUsage(
+            "fetchdumps",
+            "You cannot fetch dumps without providing an API token.",
+            ctx=ctx,
+        )
+
     if not crashids and not sys.stdin.isatty():
         crashids = list(click.get_text_stream("stdin").readlines())
 
