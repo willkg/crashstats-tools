@@ -7,6 +7,7 @@ import operator
 import pytest
 
 from crashstats_tools.utils import (
+    escape_pipes,
     escape_whitespace,
     INFINITY,
     is_crash_id_valid,
@@ -28,6 +29,19 @@ from crashstats_tools.utils import (
 )
 def test_escape_whitespace(text, expected):
     assert escape_whitespace(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (None, ""),
+        ("", ""),
+        ("abc", "abc"),
+        ("abc|def", "abc\\|def"),
+    ],
+)
+def test_escape_pipes(text, expected):
+    assert escape_pipes(text) == expected
 
 
 @pytest.mark.parametrize(

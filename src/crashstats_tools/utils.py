@@ -27,7 +27,7 @@ def escape_whitespace(text):
     return text
 
 
-def clean_pipes(text):
+def escape_pipes(text):
     text = text or ""
     return text.replace("|", "\\|")
 
@@ -340,6 +340,6 @@ def tableize_markdown(headers, rows, show_headers=True):
         output.append(" | ".join(["-" * len(str(item)) for item in headers]))
     for row in rows:
         output.append(
-            " | ".join([clean_pipes(escape_whitespace(str(item))) for item in row])
+            " | ".join([escape_pipes(escape_whitespace(str(item))) for item in row])
         )
     return "\n".join(output)
