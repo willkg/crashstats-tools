@@ -16,12 +16,13 @@ from requests.packages.urllib3.util.retry import Retry
 DEFAULT_HOST = "https://crash-stats.mozilla.org"
 
 
-WHITESPACE_TO_CLEAN = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
+WHITESPACE_TO_ESCAPE = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
 
 
-def clean_whitespace(text):
+def escape_whitespace(text):
+    """Escapes whitespace characters."""
     text = text or ""
-    for s, replace in WHITESPACE_TO_CLEAN:
+    for s, replace in WHITESPACE_TO_ESCAPE:
         text = text.replace(s, replace)
     return text
 
@@ -318,9 +319,9 @@ def tableize_tab(headers, rows, show_headers=True):
     """
     output = []
     if show_headers:
-        output.append("\t".join([clean_whitespace(str(item)) for item in headers]))
+        output.append("\t".join([escape_whitespace(str(item)) for item in headers]))
     for row in rows:
-        output.append("\t".join([clean_whitespace(str(item)) for item in row]))
+        output.append("\t".join([escape_whitespace(str(item)) for item in row]))
     return "\n".join(output)
 
 
@@ -339,6 +340,6 @@ def tableize_markdown(headers, rows, show_headers=True):
         output.append(" | ".join(["-" * len(str(item)) for item in headers]))
     for row in rows:
         output.append(
-            " | ".join([clean_pipes(clean_whitespace(str(item))) for item in row])
+            " | ".join([clean_pipes(escape_whitespace(str(item))) for item in row])
         )
     return "\n".join(output)
