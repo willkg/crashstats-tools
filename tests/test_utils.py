@@ -13,6 +13,8 @@ from crashstats_tools.utils import (
     is_crash_id_valid,
     parse_args,
     parse_crashid,
+    tableize_markdown,
+    tableize_tab,
 )
 
 
@@ -134,3 +136,85 @@ def test_infinity_lhs_subtraction():
 def test_infinity_rhs_subtraction():
     with pytest.raises(ValueError):
         5 - INFINITY
+
+
+@pytest.mark.parametrize(
+    "headers, rows, show_headers, expected",
+    [
+        (
+            ["abc", "def"],
+            [["1", "foo"], ["2", "bar"]],
+            True,
+            "abc\tdef\n1\tfoo\n2\tbar",
+        ),
+        (
+            ["abc", "def"],
+            [["1", "foo"], ["2", "bar"]],
+            False,
+            "1\tfoo\n2\tbar",
+        ),
+        # Test stringifying ints and floats
+        (
+            ["abc", "def", "ghi"],
+            [[1, "foo", 5.5], [2, "bar", 7.5]],
+            True,
+            "abc\tdef\tghi\n1\tfoo\t5.5\n2\tbar\t7.5",
+        ),
+        # Test whitespace escaping
+        (
+            ["abc", "def"],
+            [["1", "foo\tjoe\r\njam"], ["2", "bar"]],
+            True,
+            "abc\tdef\n1\tfoo\\tjoe\\r\\njam\n2\tbar",
+        ),
+    ],
+)
+def test_tableize_tab(headers, rows, show_headers, expected):
+    assert (
+        tableize_tab(headers=headers, rows=rows, show_headers=show_headers) == expected
+    )
+
+
+@pytest.mark.parametrize(
+    "headers, rows, show_headers, expected",
+    [
+        (
+            ["abc", "def"],
+            [["1", "foo"], ["2", "bar"]],
+            True,
+            "abc | def\n--- | ---\n1 | foo\n2 | bar",
+        ),
+        (
+            ["abc", "def"],
+            [["1", "foo"], ["2", "bar"]],
+            False,
+            "1 | foo\n2 | bar",
+        ),
+        # Test stringifying ints and floats
+        (
+            ["abc", "def", "ghi"],
+            [[1, "foo", 5.5], [2, "bar", 7.5]],
+            True,
+            "abc | def | ghi\n--- | --- | ---\n1 | foo | 5.5\n2 | bar | 7.5",
+        ),
+        # Test whitespace escaping
+        (
+            ["abc", "def"],
+            [["1", "foo\tjoe\r\njam"], ["2", "bar"]],
+            True,
+            "abc | def\n--- | ---\n1 | foo\\tjoe\\r\\njam\n2 | bar",
+        ),
+        # Test pipe escaping
+        (
+            ["abc", "def"],
+            [["1", "foo|bat"], ["2", "bar"]],
+            True,
+            "abc | def\n--- | ---\n1 | foo\\|bat\n2 | bar",
+        ),
+    ],
+)
+def test_tableize_markdown(headers, rows, show_headers, expected):
+    assert (
+        tableize_markdown(headers=headers, rows=rows, show_headers=show_headers)
+        == expected
+    )
