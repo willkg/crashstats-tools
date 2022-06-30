@@ -2,20 +2,26 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-from click.testing import CliRunner
 import hashlib
 import json
 import pathlib
-import responses
 from textwrap import dedent
+
+from click.testing import CliRunner
+import responses
 
 from crashstats_tools import cmd_fetch_data
 from crashstats_tools.utils import DEFAULT_HOST
 
 
+@responses.activate
 def test_it_runs():
     runner = CliRunner()
-    result = runner.invoke(cli=cmd_fetch_data.fetch_data, args=["--help"])
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=["--help"],
+        env={"COLUMNS": "100"},
+    )
     assert result.exit_code == 0
 
 
@@ -45,7 +51,11 @@ def test_fetch_raw(tmpdir):
 
     runner = CliRunner()
     args = ["--raw", "--no-dumps", "--no-processed", str(tmpdir), crash_id]
-    result = runner.invoke(cli=cmd_fetch_data.fetch_data, args=args)
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=args,
+        env={"COLUMNS": "100"},
+    )
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
@@ -92,7 +102,10 @@ def test_fetch_raw_with_token(tmpdir):
     result = runner.invoke(
         cli=cmd_fetch_data.fetch_data,
         args=args,
-        env={"CRASHSTATS_API_TOKEN": api_token},
+        env={
+            "CRASHSTATS_API_TOKEN": api_token,
+            "COLUMNS": "100",
+        },
     )
     assert result.exit_code == 0
     assert result.output == dedent(
@@ -113,7 +126,11 @@ def test_fetch_dumps_no_token(tmpdir):
 
     runner = CliRunner()
     args = ["--raw", "--dumps", "--no-processed", str(tmpdir), crash_id]
-    result = runner.invoke(cli=cmd_fetch_data.fetch_data, args=args)
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=args,
+        env={"COLUMNS": "100"},
+    )
     assert result.exit_code == 2
     assert result.output == dedent(
         """\
@@ -137,7 +154,10 @@ def test_fetch_dumps_no_raw(tmpdir):
     result = runner.invoke(
         cli=cmd_fetch_data.fetch_data,
         args=args,
-        env={"CRASHSTATS_API_TOKEN": api_token},
+        env={
+            "CRASHSTATS_API_TOKEN": api_token,
+            "COLUMNS": "100",
+        },
     )
     assert result.exit_code == 2
     assert result.output == dedent(
@@ -205,7 +225,10 @@ def test_fetch_dumps(tmpdir):
     result = runner.invoke(
         cli=cmd_fetch_data.fetch_data,
         args=args,
-        env={"CRASHSTATS_API_TOKEN": api_token},
+        env={
+            "CRASHSTATS_API_TOKEN": api_token,
+            "COLUMNS": "100",
+        },
     )
     assert result.exit_code == 0
     assert result.output == dedent(
@@ -250,7 +273,11 @@ def test_fetch_processed(tmpdir):
 
     runner = CliRunner()
     args = ["--no-raw", "--no-dumps", "--processed", str(tmpdir), crash_id]
-    result = runner.invoke(cli=cmd_fetch_data.fetch_data, args=args)
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=args,
+        env={"COLUMNS": "100"},
+    )
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
@@ -296,7 +323,10 @@ def test_fetch_processed_with_token(tmpdir):
     result = runner.invoke(
         cli=cmd_fetch_data.fetch_data,
         args=args,
-        env={"CRASHSTATS_API_TOKEN": api_token},
+        env={
+            "CRASHSTATS_API_TOKEN": api_token,
+            "COLUMNS": "100",
+        },
     )
     assert result.exit_code == 0
     assert result.output == dedent(
@@ -345,7 +375,11 @@ def test_host(tmpdir):
         str(tmpdir),
         crash_id,
     ]
-    result = runner.invoke(cli=cmd_fetch_data.fetch_data, args=args)
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=args,
+        env={"COLUMNS": "100"},
+    )
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
