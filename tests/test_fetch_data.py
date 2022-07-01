@@ -33,7 +33,6 @@ def test_fetch_raw(tmpdir):
         "Version": "100.0",
     }
 
-    # Mock requests to return araw crash data
     responses.add(
         responses.GET,
         DEFAULT_HOST + "/api/RawCrash/",
@@ -79,7 +78,6 @@ def test_fetch_raw_with_token(tmpdir):
         "Version": "100.0",
     }
 
-    # Mock requests to return araw crash data
     responses.add(
         responses.GET,
         DEFAULT_HOST + "/api/RawCrash/",
@@ -255,7 +253,6 @@ def test_fetch_processed(tmpdir):
         "version": "100.0",
     }
 
-    # Mock requests to return araw crash data
     responses.add(
         responses.GET,
         DEFAULT_HOST + "/api/ProcessedCrash/",
@@ -301,7 +298,6 @@ def test_fetch_processed_with_token(tmpdir):
         "version": "100.0",
     }
 
-    # Mock requests to return araw crash data
     responses.add(
         responses.GET,
         DEFAULT_HOST + "/api/ProcessedCrash/",
@@ -350,7 +346,6 @@ def test_host(tmpdir):
         "Version": "100.0",
     }
 
-    # Mock requests to return araw crash data
     responses.add(
         responses.GET,
         host + "/api/RawCrash/",
