@@ -120,7 +120,7 @@ def extract_supersearch_params(url):
 @click.option(
     "--format",
     "format_type",
-    default="table",
+    default="tab",
     show_default=True,
     type=click.Choice(["table", "tab", "json"], case_sensitive=False),
     help="format to print output",
@@ -211,6 +211,8 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     params.update(parse_args(ctx.args))
 
+    params["_facets_size"] = 0
+
     if "_columns" not in params:
         params["_columns"] = ["uuid"]
 
@@ -232,10 +234,6 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
             )
 
     console = Console()
-    if not console.is_terminal and format_type == "table":
-        # Switch to tab if stdout is not a terminal. This makes it more
-        # convenient for piping supersearch output
-        format_type = "tab"
 
     if verbose:
         console.print(f"Params: {params}")
@@ -271,7 +269,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         )
 
     if format_type == "table":
-        table = Table(show_edge=False)
+        table = Table(show_edge=False, show_header=headers)
         for column in params["_columns"]:
             table.add_column(column, justify="left")
         rows = [[item[field] for field in params["_columns"]] for item in records]
@@ -282,7 +280,10 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     elif format_type == "tab":
         rows = [[item[field] for field in params["_columns"]] for item in records]
-        console.print(
+
+        # NOTE(willkg): we don't use console.print here because rich will do fancy
+        # things like wrapping and fixing tabs we don't want that
+        click.echo(
             tableize_tab(headers=params["_columns"], rows=rows, show_headers=headers)
         )
 
