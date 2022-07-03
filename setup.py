@@ -30,6 +30,7 @@ EXTRAS_REQUIRE = {
         "build==0.8.0",
         "check-manifest==0.48",
         "flake8==4.0.1",
+        "freezegun==1.2.1",
         "pytest==7.1.2",
         "responses==0.21.0",
         "tox==3.25.0",
