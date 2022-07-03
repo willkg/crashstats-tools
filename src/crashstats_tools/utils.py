@@ -343,3 +343,22 @@ def tableize_markdown(headers, rows, show_headers=True):
             " | ".join([escape_pipes(escape_whitespace(str(item))) for item in row])
         )
     return "\n".join(output)
+
+
+RELATIVE_RE = re.compile(r"(\d+)([hdw])", re.IGNORECASE)
+
+
+def parse_relative_date(text):
+    """Takes a relative date specification and returns a timedelta."""
+    if not text or not isinstance(text, str):
+        raise ValueError(f"'{text}' is not a valid relative date.")
+
+    parsed = RELATIVE_RE.match(text)
+    if parsed is None:
+        raise ValueError(f"'{text}' is not a valid relative date.")
+
+    count = int(parsed.group(1))
+    unit = parsed.group(2)
+
+    unit_to_arg = {"h": "hours", "d": "days", "w": "weeks"}
+    return datetime.timedelta(**{unit_to_arg[unit]: count})

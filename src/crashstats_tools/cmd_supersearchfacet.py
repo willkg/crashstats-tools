@@ -7,7 +7,6 @@ import functools
 import json
 import logging
 import os
-import re
 from urllib.parse import urlparse, parse_qs
 
 import click
@@ -18,14 +17,10 @@ from crashstats_tools.utils import (
     DEFAULT_HOST,
     http_get,
     parse_args,
+    parse_relative_date,
     tableize_markdown,
     tableize_tab,
 )
-
-
-RELATIVE_RE = re.compile(r"(\d+)([hdwm])", re.IGNORECASE)
-
-DEFAULT_NOW = datetime.datetime.now().strftime("%Y-%m-%d")
 
 
 @functools.total_ordering
@@ -49,19 +44,6 @@ def thing_to_key(item):
 
 def now():
     return datetime.datetime.now()
-
-
-def parse_relative_date(text):
-    """Takes a relative date specification and returns a timedelta."""
-    parsed = RELATIVE_RE.match(text)
-    if parsed is None:
-        raise click.UsageError(f"'{text}' is not a valid relative date.")
-
-    count = int(parsed.group(1))
-    unit = parsed.group(2)
-
-    unit_to_arg = {"h": "hours", "d": "days", "w": "weeks"}
-    return datetime.timedelta(**{unit_to_arg[unit]: count})
 
 
 def generate_periods(period, start_date, end_date):
@@ -108,13 +90,13 @@ def fetch_supersearch_facets(console, host, params, api_token=None, verbose=Fals
 
 
 def extract_supersearch_params(url):
-    """Parses out params from the query string and drops any aggs-related ones."""
+    """Parses out params from the query string and drops any search-related ones."""
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
 
+    # Remove search things
+    aggs_keys = ("_columns", "_results_number", "_results_offset")
     for key in list(params.keys()):
-        # Remove any aggs
-        aggs_keys = ("_facets", "_aggs", "_histogram", "_cardinality")
         if key.startswith(aggs_keys):
             del params[key]
 
@@ -133,9 +115,9 @@ def extract_supersearch_params(url):
 )
 @click.option(
     "--end-date",
-    default=DEFAULT_NOW,
+    default=None,
     show_default=True,
-    help="end date for range; YYYY-MM-DD format",
+    help="end date for range; YYYY-MM-DD format; defaults to today",
 )
 @click.option(
     "--relative-range", default="7d", help="relative range ending on end-date"
@@ -233,11 +215,11 @@ def supersearchfacet(
     else:
         console = Console()
 
+    if end_date is None:
+        end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+
     # Require at least one facet specified.
     parsed_args = parse_args(ctx.args)
-    if "_facets" not in parsed_args:
-        raise click.ClickException("At least one _facets must be specified.")
-        ctx.exit(1)
 
     if verbose:
         # Set logging to DEBUG because this picks up debug logging from
@@ -253,6 +235,10 @@ def supersearchfacet(
         params = {}
 
     params.update(parsed_args)
+
+    if "_facets" not in params:
+        raise click.UsageError("At least one _facets must be specified.")
+        ctx.exit(1)
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
@@ -270,16 +256,22 @@ def supersearchfacet(
                 + "information.[/yellow]"
             )
 
-    if not start_date:
-        range_timedelta = parse_relative_date(relative_range)
+    if "date" not in params and not start_date:
+        try:
+            range_timedelta = parse_relative_date(relative_range)
+        except ValueError as ve:
+            raise click.UsageError(ve.msg)
+
         start_date = (
             datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
         ).strftime("%Y-%m-%d")
 
-    # If there's no count/period, then we can do a single facet and print the
-    # data out and we're done.
-    if period == "none":
-        params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
+    # If there's no count/period or the user used a supersearch-url that
+    # specifies a date, then we can do a single facet and print the data out
+    # and we're done
+    if period == "none" or "date" in params:
+        if "date" not in params:
+            params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
         if verbose:
             console.print(f"Params: {params}")
@@ -324,7 +316,10 @@ def supersearchfacet(
             console.print(table)
 
         elif format_type == "tab":
-            console.print(tableize_tab(headers=headers, rows=rows))
+            # NOTE(willkg): We need to use click.echo because console.print
+            # does rich fancy-stuff with the output
+            click.echo(tableize_tab(headers=headers, rows=rows))
+
         else:
             console.print(tableize_markdown(headers=headers, rows=rows))
         return
@@ -403,8 +398,12 @@ def supersearchfacet(
             for row in rows:
                 table.add_row(*[str(cell) for cell in row])
             console.print(table)
+
         elif format_type == "tab":
-            console.print(tableize_tab(headers=headers, rows=rows))
+            # NOTE(willkg): We need to use click.echo because console.print
+            # does rich fancy-stuff with the output
+            click.echo(tableize_tab(headers=headers, rows=rows))
+
         elif format_type == "markdown":
             console.print(tableize_markdown(headers=headers, rows=rows))
 

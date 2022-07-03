@@ -85,9 +85,9 @@ def extract_supersearch_params(url):
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
 
+    # Remove any aggs
+    aggs_keys = ("_facets", "_aggs", "_histogram", "_cardinality")
     for key in list(params.keys()):
-        # Remove any aggs
-        aggs_keys = ("_facets", "_aggs", "_histogram", "_cardinality")
         if key.startswith(aggs_keys):
             del params[key]
 

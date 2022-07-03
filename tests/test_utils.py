@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import datetime
+import inspect
 import operator
 
 import pytest
@@ -13,6 +15,7 @@ from crashstats_tools.utils import (
     is_crash_id_valid,
     parse_args,
     parse_crashid,
+    parse_relative_date,
     tableize_markdown,
     tableize_tab,
 )
@@ -218,3 +221,23 @@ def test_tableize_markdown(headers, rows, show_headers, expected):
         tableize_markdown(headers=headers, rows=rows, show_headers=show_headers)
         == expected
     )
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        (None, ValueError),
+        ("", ValueError),
+        ("baddata", ValueError),
+        ("h", ValueError),
+        ("3h", datetime.timedelta(hours=3)),
+        ("7d", datetime.timedelta(days=7)),
+        ("2w", datetime.timedelta(days=14)),
+    ],
+)
+def test_parse_relative_date(text, expected):
+    if inspect.isclass(expected) and issubclass(expected, BaseException):
+        with pytest.raises(expected):
+            parse_relative_date(text)
+    else:
+        assert parse_relative_date(text) == expected
