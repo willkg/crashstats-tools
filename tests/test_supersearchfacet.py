@@ -624,3 +624,160 @@ def test_period_daily():
         }
         """
     )
+
+
+@freezegun.freeze_time("2022-07-01 12:00:00")
+@responses.activate
+def test_period_weekly():
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-01 00:00:00", "<2022-06-08 00:00:00"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json={
+            "hits": [],
+            "total": 22,
+            "facets": {
+                "product": [
+                    {"term": "Firefox", "count": 7},
+                    {"term": "Fenix", "count": 3},
+                ]
+            },
+            "errors": [],
+        },
+    )
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-08 00:00:00", "<2022-06-15 00:00:00"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json={
+            "hits": [],
+            "total": 19,
+            "facets": {
+                "product": [
+                    {"term": "Firefox", "count": 6},
+                    {"term": "Fenix", "count": 3},
+                ]
+            },
+            "errors": [],
+        },
+    )
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-15 00:00:00", "<2022-06-22 00:00:00"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json={
+            "hits": [],
+            "total": 18,
+            "facets": {
+                "product": [
+                    {"term": "Firefox", "count": 4},
+                    {"term": "Fenix", "count": 4},
+                ]
+            },
+            "errors": [],
+        },
+    )
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-22 00:00:00", "<2022-06-29 00:00:00"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json={
+            "hits": [],
+            "total": 19,
+            "facets": {
+                "product": [
+                    {"term": "Firefox", "count": 5},
+                    {"term": "Fenix", "count": 4},
+                ]
+            },
+            "errors": [],
+        },
+    )
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-29 00:00:00", "<2022-07-06 00:00:00"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json={
+            "hits": [],
+            "total": 19,
+            "facets": {
+                "product": [
+                    {"term": "Firefox", "count": 5},
+                    {"term": "Fenix", "count": 4},
+                ]
+            },
+            "errors": [],
+        },
+    )
+
+    runner = CliRunner()
+
+    # Test format=tab
+    result = runner.invoke(
+        cli=cmd_supersearchfacet.supersearchfacet,
+        args=[
+            "--_facets=product",
+            "--format=tab",
+            "--start-date=2022-06-01",
+            "--end-date=2022-07-01",
+            "--period=weekly",
+        ],
+        env={"COLUMNS": "100"},
+    )
+    print(result.output)
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        date\t--\tFenix\tFirefox
+        2022-06-01 00:00:00\t12\t3\t7
+        2022-06-08 00:00:00\t10\t3\t6
+        2022-06-15 00:00:00\t10\t4\t4
+        2022-06-22 00:00:00\t10\t4\t5
+        2022-06-29 00:00:00\t10\t4\t5
+        """
+    )

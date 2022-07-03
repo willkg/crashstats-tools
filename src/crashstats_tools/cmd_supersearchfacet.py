@@ -52,8 +52,12 @@ def generate_periods(period, start_date, end_date):
 
     if period == "daily":
         delta = datetime.timedelta(days=1)
+
     elif period == "hourly":
         delta = datetime.timedelta(hours=1)
+
+    elif period == "weekly":
+        delta = datetime.timedelta(days=7)
 
     while start_point <= end_point:
         next_end_point = start_point + delta
@@ -126,7 +130,7 @@ def extract_supersearch_params(url):
     "--period",
     default="none",
     show_default=True,
-    type=click.Choice(["none", "daily", "hourly"], case_sensitive=False),
+    type=click.Choice(["none", "daily", "hourly", "weekly"], case_sensitive=False),
     help="period to facet on to get count/period",
 )
 @click.option(
@@ -332,6 +336,9 @@ def supersearchfacet(
 
     # Map of facet_name -> (map of date -> (map of value -> count))
     facet_tables = {facet_name: {} for facet_name in facet_names}
+
+    # FIXME(willkg): for "period=weekly", does it make sense to anchor it on
+    # beginning of the week? (sunday or monday)
 
     for day_start, day_end in generate_periods(period, start_date, end_date):
         params.update({"date": [">=%s" % day_start, "<%s" % day_end]})
