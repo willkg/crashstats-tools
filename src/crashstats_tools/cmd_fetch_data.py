@@ -18,7 +18,15 @@ def create_dir_if_needed(d):
 
 
 def fetch_crash(
-    console, host, fetchraw, fetchdumps, fetchprocessed, outputdir, api_token, crash_id
+    console,
+    host,
+    fetchraw,
+    fetchdumps,
+    fetchprocessed,
+    outputdir,
+    api_token,
+    crash_id,
+    overwrite,
 ):
     """Fetch crash data and save to correct place on the file system
 
@@ -27,71 +35,92 @@ def fetch_crash(
     """
     if fetchraw:
         # Fetch raw crash metadata
-        console.print(f"[bold green]Fetching raw {crash_id}[/bold green]")
-        resp = http_get(
-            url=host + "/api/RawCrash/",
-            params={"crash_id": crash_id, "format": "meta"},
-            api_token=api_token,
-        )
-
-        # Save raw crash to file system
-        raw_crash = resp.json()
         fn = os.path.join(outputdir, "raw_crash", crash_id)
-        create_dir_if_needed(os.path.dirname(fn))
-        with open(fn, "w") as fp:
-            json.dump(raw_crash, fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
-
-    if fetchdumps:
-        # Save dump_names to file system
-        dump_names = raw_crash.get("dump_checksums", {}).keys()
-        fn = os.path.join(outputdir, "dump_names", crash_id)
-        create_dir_if_needed(os.path.dirname(fn))
-        with open(fn, "w") as fp:
-            json.dump(list(dump_names), fp)
-
-        # Fetch dumps
-        for dump_name in dump_names:
+        if os.path.exists(fn) and not overwrite:
             console.print(
-                f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green]"
+                f"[bold green]Fetching raw {crash_id}[/bold green] ... already exists"
             )
-
-            # We store "upload_file_minidump" as "dump", so we need to use that
-            # name when requesting from the RawCrash api
-            file_name = dump_name
-            if file_name == "upload_file_minidump":
-                file_name = "dump"
-
+        else:
+            console.print(f"[bold green]Fetching raw {crash_id}[/bold green]")
             resp = http_get(
                 url=host + "/api/RawCrash/",
-                params={"crash_id": crash_id, "format": "raw", "name": file_name},
+                params={"crash_id": crash_id, "format": "meta"},
                 api_token=api_token,
             )
 
-            if resp.status_code != 200:
-                raise Exception(
-                    f"Something unexpected happened. status_code {resp.status_code}, "
-                    + f"content {resp.content}"
-                )
-
-            fn = os.path.join(outputdir, dump_name, crash_id)
+            # Save raw crash to file system
+            raw_crash = resp.json()
             create_dir_if_needed(os.path.dirname(fn))
-            with open(fn, "wb") as fp:
-                fp.write(resp.content)
+            with open(fn, "w") as fp:
+                json.dump(raw_crash, fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
+
+        if fetchdumps:
+            # Save dump_names to file system
+            dump_names = raw_crash.get("dump_checksums", {}).keys()
+            fn = os.path.join(outputdir, "dump_names", crash_id)
+            create_dir_if_needed(os.path.dirname(fn))
+            with open(fn, "w") as fp:
+                json.dump(list(dump_names), fp)
+
+            # Fetch dumps
+            for dump_name in dump_names:
+
+                # We store "upload_file_minidump" as "dump", so we need to use that
+                # name when requesting from the RawCrash api
+                file_name = dump_name
+                if file_name == "upload_file_minidump":
+                    file_name = "dump"
+
+                fn = os.path.join(outputdir, dump_name, crash_id)
+                if os.path.exists(fn) and not overwrite:
+                    console.print(
+                        f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green] ... "
+                        + "already exists"
+                    )
+                else:
+                    console.print(
+                        f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green]"
+                    )
+                    resp = http_get(
+                        url=host + "/api/RawCrash/",
+                        params={
+                            "crash_id": crash_id,
+                            "format": "raw",
+                            "name": file_name,
+                        },
+                        api_token=api_token,
+                    )
+
+                    if resp.status_code != 200:
+                        raise Exception(
+                            f"Something unexpected happened. status_code {resp.status_code}, "
+                            + f"content {resp.content}"
+                        )
+
+                    create_dir_if_needed(os.path.dirname(fn))
+                    with open(fn, "wb") as fp:
+                        fp.write(resp.content)
 
     if fetchprocessed:
         # Fetch processed crash data
-        console.print(f"[bold green]Fetching processed {crash_id}[/bold green]")
-        resp = http_get(
-            host + "/api/ProcessedCrash/",
-            params={"crash_id": crash_id, "format": "meta"},
-            api_token=api_token,
-        )
-
-        # Save processed crash to file system
         fn = os.path.join(outputdir, "processed_crash", crash_id)
-        create_dir_if_needed(os.path.dirname(fn))
-        with open(fn, "w") as fp:
-            json.dump(resp.json(), fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
+        if os.path.exists(fn) and not overwrite:
+            console.print(
+                f"[bold green]Fetching processed {crash_id}[/bold green] ... "
+                + "already exists"
+            )
+        else:
+            console.print(f"[bold green]Fetching processed {crash_id}[/bold green]")
+            resp = http_get(
+                host + "/api/ProcessedCrash/",
+                params={"crash_id": crash_id, "format": "meta"},
+                api_token=api_token,
+            )
+
+            # Save processed crash to file system
+            create_dir_if_needed(os.path.dirname(fn))
+            with open(fn, "w") as fp:
+                json.dump(resp.json(), fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
 
 
 @click.command()
@@ -99,6 +128,11 @@ def fetch_crash(
     "--host",
     default=DEFAULT_HOST,
     help="host to pull crash data from; this needs to match CRASHSTATS_API_TOKEN value",
+)
+@click.option(
+    "--overwrite/--no-overwrite",
+    default=True,
+    help="whether or not to overwrite existing data",
 )
 @click.option(
     "--raw/--no-raw",
@@ -130,7 +164,15 @@ def fetch_crash(
 @click.argument("crashids", nargs=-1)
 @click.pass_context
 def fetch_data(
-    ctx, host, fetchraw, fetchdumps, fetchprocessed, color, outputdir, crashids
+    ctx,
+    host,
+    overwrite,
+    fetchraw,
+    fetchdumps,
+    fetchprocessed,
+    color,
+    outputdir,
+    crashids,
 ):
     """
     Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
@@ -216,6 +258,7 @@ def fetch_data(
             outputdir=outputdir,
             api_token=api_token,
             crash_id=crashid,
+            overwrite=overwrite,
         )
     console.print("[bold green]Done![/bold green]")
 
