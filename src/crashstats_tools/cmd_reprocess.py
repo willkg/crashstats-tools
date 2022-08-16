@@ -70,6 +70,8 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     Also, if you're processing a lot of crashes, you should let us know before
     you do it.
     """
+    host = host.rstrip("/")
+
     if not color:
         console = Console(color_system=None)
         error_console = Console(stderr=True, color_system=None)
