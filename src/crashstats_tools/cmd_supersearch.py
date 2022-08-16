@@ -191,6 +191,8 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     https://crash-stats.mozilla.org/documentation/memory_dump_access/
     """
+    host = host.rstrip("/")
+
     if not color:
         console = Console(color_system=None)
     else:

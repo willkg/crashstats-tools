@@ -198,6 +198,8 @@ def fetch_data(
 
     https://crash-stats.mozilla.org/documentation/memory_dump_access/
     """
+    host = host.rstrip("/")
+
     if not color:
         console = Console(color_system=None)
     else:
