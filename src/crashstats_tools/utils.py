@@ -6,6 +6,7 @@ import datetime
 from functools import total_ordering
 import json
 import re
+from typing import Any, Dict, Generator, Iterable, List
 from urllib.parse import urlparse
 
 import requests
@@ -308,41 +309,43 @@ def parse_crashid(item):
     raise ValueError(f"Not a valid crash id: {item}")
 
 
-def tableize_tab(headers, rows, show_headers=True):
+def tableize_tab(
+    headers: List[str], data: Iterable[Dict[str, Any]], show_headers: bool = True
+) -> Generator[str, None, None]:
     """Generate output for a table using tab delimiters.
 
-    :param list-of-str headers: headers of the table
-    :param list-of-str rows: rows of the table
+    :param headers: headers of the table
+    :param data: rows of the table
 
-    :returns: string
+    :returns: generator of strings
 
     """
-    output = []
     if show_headers:
-        output.append("\t".join([escape_whitespace(str(item)) for item in headers]))
-    for row in rows:
-        output.append("\t".join([escape_whitespace(str(item)) for item in row]))
-    return "\n".join(output)
+        yield "\t".join([escape_whitespace(str(item)) for item in headers])
+
+    for item in data:
+        row = [item[field] for field in headers]
+        yield "\t".join([escape_whitespace(str(item)) for item in row])
 
 
-def tableize_markdown(headers, rows, show_headers=True):
+def tableize_markdown(
+    headers: List[str], data: Iterable[Dict[str, Any]], show_headers: bool = True
+) -> Generator[str, None, None]:
     """Generate output for a table using markdown.
 
-    :param list-of-str headers: headers of the table
-    :param list-of-str rows: rows of the table
+    :param headers: headers of the table
+    :param data: rows of the table
 
-    :returns: string
+    :returns: generator of strings
 
     """
-    output = []
     if show_headers:
-        output.append(" | ".join([str(header) for header in headers]))
-        output.append(" | ".join(["-" * len(str(item)) for item in headers]))
-    for row in rows:
-        output.append(
-            " | ".join([escape_pipes(escape_whitespace(str(item))) for item in row])
-        )
-    return "\n".join(output)
+        yield " | ".join([str(header) for header in headers])
+        yield " | ".join(["-" * len(str(item)) for item in headers])
+
+    for item in data:
+        row = [item[field] for field in headers]
+        yield " | ".join([escape_pipes(escape_whitespace(str(item))) for item in row])
 
 
 RELATIVE_RE = re.compile(r"(\d+)([hdw])", re.IGNORECASE)
