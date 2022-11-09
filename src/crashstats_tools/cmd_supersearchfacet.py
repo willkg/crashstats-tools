@@ -232,8 +232,6 @@ def supersearchfacet(
         # requests which lets us see urls.
         logging.basicConfig(level=logging.DEBUG)
 
-    host = host.rstrip("/")
-
     # Start with params from --url value or product=Firefox
     if supersearch_url:
         params = extract_supersearch_params(supersearch_url)

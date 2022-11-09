@@ -203,8 +203,6 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         # requests which lets us see urls.
         logging.basicConfig(level=logging.DEBUG)
 
-    host = host.rstrip("/")
-
     # Start with params from --url value or product=Firefox
     if supersearch_url:
         params = extract_supersearch_params(supersearch_url)
@@ -234,8 +232,6 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
             raise click.BadOptionUsage(
                 "num", 'num needs to be an integer or "all"', ctx=ctx
             )
-
-    console = Console()
 
     if verbose:
         console.print(f"Params: {params}")
