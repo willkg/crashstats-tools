@@ -23,22 +23,7 @@ def get_version():
 
 
 INSTALL_REQUIRES = ["click", "more_itertools", "requests", "rich"]
-
-EXTRAS_REQUIRE = {
-    "dev": [
-        "black==22.6.0",
-        "build==0.8.0",
-        "check-manifest==0.48",
-        "flake8==4.0.1",
-        "freezegun==1.2.1",
-        "pytest==7.1.2",
-        "responses==0.21.0",
-        "tox==3.25.0",
-        "tox-gh-actions==2.9.1",
-        "twine==4.0.1",
-        "wheel==0.37.1",
-    ]
-}
+EXTRAS_REQUIRE = {}
 
 
 setup(

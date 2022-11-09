@@ -1,0 +1,11 @@
+black==22.10.0
+build==0.9.0
+check-manifest==0.48
+flake8==5.0.4
+freezegun==1.2.2
+pytest==7.2.0
+responses==0.22.0
+tox==3.27.0
+tox-gh-actions==2.10.0
+twine==4.0.1
+wheel==0.38.3
