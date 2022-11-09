@@ -1,10 +1,10 @@
 DEFAULT_GOAL := help
 PROJECT=crashstats_tools
-BLACKVERSION=py37
 
 .PHONY: help
 help:
 	@echo "Available rules:"
+	@echo ""
 	@fgrep -h "##" Makefile | fgrep -v fgrep | sed 's/\(.*\):.*##/\1:/'
 
 .PHONY: clean
@@ -16,8 +16,8 @@ clean:  ## Clean build artifacts
 
 .PHONY: lint
 lint:  ## Lint and black reformat files
-	black --target-version=${BLACKVERSION} src tests setup.py
-	flake8 setup.py src tests
+	black --target-version=py37 --line-length=88 setup.py src tests
+	tox -e py37-lint
 
 .PHONY: test
 test:  ## Run tests
