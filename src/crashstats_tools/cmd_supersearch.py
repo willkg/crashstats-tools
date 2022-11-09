@@ -17,6 +17,7 @@ from crashstats_tools.utils import (
     http_get,
     INFINITY,
     parse_args,
+    tableize_markdown,
     tableize_tab,
 )
 
@@ -122,7 +123,7 @@ def extract_supersearch_params(url):
     "format_type",
     default="tab",
     show_default=True,
-    type=click.Choice(["table", "tab", "json"], case_sensitive=False),
+    type=click.Choice(["table", "tab", "json", "markdown"], case_sensitive=False),
     help="format to print output",
 )
 @click.option(
@@ -274,6 +275,12 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     elif format_type == "tab":
         for line in tableize_tab(params["_columns"], data=hits, show_headers=headers):
+            # NOTE(willkg): we don't use console.print here because rich will do fancy
+            # things like wrapping and fixing tabs we don't want that
+            click.echo(line)
+
+    elif format_type == "markdown":
+        for line in tableize_markdown(params["_columns"], data=hits):
             # NOTE(willkg): we don't use console.print here because rich will do fancy
             # things like wrapping and fixing tabs we don't want that
             click.echo(line)
