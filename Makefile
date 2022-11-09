@@ -1,6 +1,5 @@
 DEFAULT_GOAL := help
 PROJECT=crashstats_tools
-BLACKVERSION=py37
 
 .PHONY: help
 help:
@@ -17,7 +16,7 @@ clean:  ## Clean build artifacts
 
 .PHONY: lint
 lint:  ## Lint and black reformat files
-	black --target-version=${BLACKVERSION} src tests setup.py
+	black --target-version=py37 --line-length=88 setup.py src tests
 	tox -e py37-lint
 
 .PHONY: test
