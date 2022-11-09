@@ -252,7 +252,6 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
                 + "information.[/yellow]"
             )
 
-    records = []
     hits = fetch_supersearch(
         console=console,
         host=host,
@@ -261,31 +260,30 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         api_token=api_token,
         verbose=verbose,
     )
-    for hit in hits:
-        records.append(
-            {field: escape_whitespace(hit[field]) for field in params["_columns"]}
-        )
 
     if format_type == "table":
         table = Table(show_edge=False, show_header=headers)
         for column in params["_columns"]:
             table.add_column(column, justify="left")
-        rows = [[item[field] for field in params["_columns"]] for item in records]
-        for row in rows:
-            table.add_row(*row)
+        for hit in hits:
+            table.add_row(
+                *[escape_whitespace(hit[field]) for field in params["_columns"]]
+            )
 
         console.print(table)
 
     elif format_type == "tab":
-        rows = [[item[field] for field in params["_columns"]] for item in records]
-
-        # NOTE(willkg): we don't use console.print here because rich will do fancy
-        # things like wrapping and fixing tabs we don't want that
-        click.echo(
-            tableize_tab(headers=params["_columns"], rows=rows, show_headers=headers)
-        )
+        for line in tableize_tab(params["_columns"], data=hits, show_headers=headers):
+            # NOTE(willkg): we don't use console.print here because rich will do fancy
+            # things like wrapping and fixing tabs we don't want that
+            click.echo(line)
 
     elif format_type == "json":
+        records = []
+        for hit in hits:
+            records.append(
+                {field: escape_whitespace(hit[field]) for field in params["_columns"]}
+            )
         console.print_json(json.dumps(records))
 
 

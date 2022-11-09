@@ -411,21 +411,20 @@ def test_json():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        {
-          "total": 19,
-          "facets": {
-            "product": [
-              {
-                "term": "Firefox",
-                "count": 5
-              },
-              {
-                "term": "Fenix",
-                "count": 4
-              }
-            ]
+        [
+          {
+            "product": "Firefox",
+            "count": 5
+          },
+          {
+            "product": "Fenix",
+            "count": 4
+          },
+          {
+            "product": "--",
+            "count": 10
           }
-        }
+        ]
         """
     )
 
@@ -598,30 +597,32 @@ def test_period_daily():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        {
-          "product": {
-            "2022-06-28 00:00:00": {
-              "Firefox": 5,
-              "Fenix": 4,
-              "--": 10
-            },
-            "2022-06-29 00:00:00": {
-              "Firefox": 4,
-              "Fenix": 4,
-              "--": 10
-            },
-            "2022-06-30 00:00:00": {
-              "Firefox": 6,
-              "Fenix": 3,
-              "--": 10
-            },
-            "2022-07-01 00:00:00": {
-              "Firefox": 7,
-              "Fenix": 3,
-              "--": 12
-            }
+        [
+          {
+            "date": "2022-06-28 00:00:00",
+            "--": 10,
+            "Fenix": 4,
+            "Firefox": 5
+          },
+          {
+            "date": "2022-06-29 00:00:00",
+            "--": 10,
+            "Fenix": 4,
+            "Firefox": 4
+          },
+          {
+            "date": "2022-06-30 00:00:00",
+            "--": 10,
+            "Fenix": 3,
+            "Firefox": 6
+          },
+          {
+            "date": "2022-07-01 00:00:00",
+            "--": 12,
+            "Fenix": 3,
+            "Firefox": 7
           }
-        }
+        ]
         """
     )
 

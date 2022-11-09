@@ -184,7 +184,8 @@ def supersearchfacet(
     Make sure to use single quotes when specifying values so that your shell doesn't
     expand variables.
 
-    You need to specify at least one facet using "--_facets".
+    You can only specify one facet using "--_facets". If you don't specify one,
+    it defaults to "signature".
 
     By default, returned data is a tab-delimited table. Tabs and newlines in
     output is escaped. Use "--format" to specify a different output format.
@@ -241,7 +242,10 @@ def supersearchfacet(
     params.update(parsed_args)
 
     if "_facets" not in params:
-        raise click.UsageError("At least one _facets must be specified.")
+        params["_facets"] = ["signature"]
+
+    if len(params["_facets"]) > 1:
+        raise click.UsageError("One '_facets' must be specified.")
         ctx.exit(1)
 
     # Sort out API token existence
@@ -288,54 +292,58 @@ def supersearchfacet(
             verbose=verbose,
         )
 
-        if format_type == "json":
-            console.print_json(json.dumps(facet_data))
-            return
+        facet_name = params["_facets"][0]
 
         remaining = facet_data["total"]
         facets = facet_data["facets"]
-        for facet_name in params.get("_facets", facets.keys()):
-            if facet_name not in facets:
-                continue
 
-            headers = [facet_name, "count"]
-            facet_item_data = facets[facet_name]
-            rows = [
-                (item["term"], item["count"])
-                for item in sorted(
-                    facet_item_data, key=lambda x: x["count"], reverse=True
-                )
-            ]
-            remaining -= sum([item["count"] for item in facet_item_data])
+        if facet_name not in facets:
+            raise click.UsageError(f"{facet_name}: no data")
+            ctx.exit(1)
 
-            if remaining:
-                rows.append(("--", remaining))
+        headers = [facet_name, "count"]
+        facet_item_data = facets[facet_name]
+        records = [
+            {facet_name: item["term"], "count": item["count"]}
+            for item in sorted(facet_item_data, key=lambda x: x["count"], reverse=True)
+        ]
+        remaining -= sum([item["count"] for item in facet_item_data])
+
+        if remaining:
+            records.append({facet_name: "--", "count": remaining})
 
         if format_type == "table":
             table = Table(show_edge=False)
             for column in headers:
                 table.add_column(column, justify="left")
-            for row in rows:
-                table.add_row(*[str(cell) for cell in row])
+
+            for item in records:
+                table.add_row(*[str(item[field]) for field in headers])
             console.print(table)
 
         elif format_type == "tab":
             # NOTE(willkg): We need to use click.echo because console.print
             # does rich fancy-stuff with the output
-            click.echo(tableize_tab(headers=headers, rows=rows))
+            for line in tableize_tab(headers=headers, data=records):
+                click.echo(line)
 
-        else:
-            console.print(tableize_markdown(headers=headers, rows=rows))
+        elif format_type == "markdown":
+            for line in tableize_markdown(headers=headers, data=records):
+                click.echo(line)
+
+        elif format_type == "json":
+            console.print_json(json.dumps(records))
+
         return
 
     # If it is in count/period mode, then we have to do one facet for each
     # period and compose the results.
 
-    # Figure out what facets we're doing
-    facet_names = params.get("_facets", ["signature"])
+    # Figure out what facet we're doing
+    facet_name = params["_facets"][0]
 
     # Map of facet_name -> (map of date -> (map of value -> count))
-    facet_tables = {facet_name: {} for facet_name in facet_names}
+    facet_tables = {facet_name: {}}
 
     # FIXME(willkg): for "period=weekly", does it make sense to anchor it on
     # beginning of the week? (sunday or monday)
@@ -357,62 +365,71 @@ def supersearchfacet(
         remaining = facet_data["total"]
         facets = facet_data["facets"]
 
-        for facet_name in facet_names:
-            for item in facets.get(facet_name, []):
-                count = item["count"]
-                facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = count
-                remaining -= count
-            facet_tables[facet_name].setdefault(day_start, {})["--"] = remaining
+        for item in facets.get(facet_name, []):
+            count = item["count"]
+            facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = count
+            remaining -= count
+        facet_tables[facet_name].setdefault(day_start, {})["--"] = remaining
 
     # Normalize the data--make sure table rows have all the values
-    for facet_name in facet_names:
-        values = set()
+    values = set()
 
-        table = facet_tables[facet_name]
-        for date, value_counts in table.items():
-            values = values | set(value_counts.keys())
+    table = facet_tables[facet_name]
+    for date, value_counts in table.items():
+        values = values | set(value_counts.keys())
 
-        for date, value_counts in table.items():
-            missing_values = values - set(value_counts.keys())
-            for missing_value in missing_values:
-                value_counts[missing_value] = 0
+    for date, value_counts in table.items():
+        missing_values = values - set(value_counts.keys())
+        for missing_value in missing_values:
+            value_counts[missing_value] = 0
 
-    # Print out the normalized data
-    if format_type == "json":
-        console.print_json(json.dumps(facet_tables))
+    table = facet_tables[facet_name]
+
+    if not table:
+        console.print(f"{facet_name}: no data")
+        ctx.exit(1)
+
+    some_date = list(table.keys())[0]
+    headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
+    records = []
+    for date, value_counts in table.items():
+        records.append(
+            {
+                field_name: val
+                for field_name, val in zip(
+                    headers,
+                    [date]
+                    + [
+                        item[1]
+                        for item in sorted(value_counts.items(), key=thing_to_key)
+                    ],
+                )
+            }
+        )
+
+    if format_type == "table":
+        table = Table(show_edge=False)
+        for column in headers:
+            table.add_column(column, justify="left")
+        for item in records:
+            table.add_row(*[str(item[field]) for field in headers])
+        console.print(table)
+
+    elif format_type == "tab":
+        # NOTE(willkg): We need to use click.echo because console.print
+        # does rich fancy-stuff with the output
+        for line in tableize_tab(headers=headers, data=records):
+            click.echo(line)
+
+    elif format_type == "markdown":
+        # NOTE(willkg): We need to use click.echo because console.print
+        # does rich fancy-stuff with the output
+        for line in tableize_markdown(headers=headers, data=records):
+            click.echo(line)
+
+    elif format_type == "json":
+        console.print_json(json.dumps(records))
         return
-
-    for facet_name in facet_names:
-        table = facet_tables[facet_name]
-
-        if not table:
-            console.print(f"{facet_name}: no data")
-            continue
-
-        some_date = list(table.keys())[0]
-        headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
-        rows = []
-        for date, value_counts in table.items():
-            rows.append(
-                [date]
-                + [item[1] for item in sorted(value_counts.items(), key=thing_to_key)]
-            )
-
-        if format_type == "table":
-            table = Table(show_edge=False)
-            for column in headers:
-                table.add_column(column, justify="left")
-            for row in rows:
-                table.add_row(*[str(cell) for cell in row])
-            console.print(table)
-
-        elif format_type == "tab":
-            # NOTE(willkg): We need to use click.echo because console.print
-            # does rich fancy-stuff with the output
-            click.echo(tableize_tab(headers=headers, rows=rows))
-
-        elif format_type == "markdown":
-            console.print(tableize_markdown(headers=headers, rows=rows))
 
 
 if __name__ == "__main__":
