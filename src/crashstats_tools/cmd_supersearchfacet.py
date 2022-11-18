@@ -299,7 +299,6 @@ def supersearchfacet(
 
         if facet_name not in facets:
             raise click.UsageError(f"{facet_name}: no data")
-            ctx.exit(1)
 
         headers = [facet_name, "count"]
         facet_item_data = facets[facet_name]
@@ -386,8 +385,7 @@ def supersearchfacet(
     table = facet_tables[facet_name]
 
     if not table:
-        console.print(f"{facet_name}: no data")
-        ctx.exit(1)
+        raise click.UsageError(f"{facet_name}: no data")
 
     some_date = list(table.keys())[0]
     headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
@@ -429,7 +427,6 @@ def supersearchfacet(
 
     elif format_type == "json":
         console.print_json(json.dumps(records))
-        return
 
 
 if __name__ == "__main__":
