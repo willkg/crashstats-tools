@@ -324,8 +324,8 @@ def tableize_tab(
         yield "\t".join([escape_whitespace(str(item)) for item in headers])
 
     for item in data:
-        row = [item[field] for field in headers]
-        yield "\t".join([escape_whitespace(str(item)) for item in row])
+        row = [escape_whitespace(str(item.get(field, ""))) for field in headers]
+        yield "\t".join(row) or "<no data>"
 
 
 def tableize_markdown(
@@ -344,8 +344,11 @@ def tableize_markdown(
         yield " | ".join(["-" * len(str(item)) for item in headers])
 
     for item in data:
-        row = [item[field] for field in headers]
-        yield " | ".join([escape_pipes(escape_whitespace(str(item))) for item in row])
+        row = [
+            escape_pipes(escape_whitespace(str(item.get(field, ""))))
+            for field in headers
+        ]
+        yield " | ".join(row) or "<no data>"
 
 
 RELATIVE_RE = re.compile(r"(\d+)([hdw])", re.IGNORECASE)
