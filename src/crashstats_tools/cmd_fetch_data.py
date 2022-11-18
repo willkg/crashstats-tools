@@ -56,7 +56,7 @@ def fetch_crash(
 
         if fetchdumps:
             # Save dump_names to file system
-            dump_names = raw_crash.get("dump_checksums", {}).keys()
+            dump_names = raw_crash.get("metadata", {}).get("dump_checksums", {}).keys()
             fn = os.path.join(outputdir, "dump_names", crash_id)
             create_dir_if_needed(os.path.dirname(fn))
             with open(fn, "w") as fp:
@@ -255,7 +255,7 @@ def fetch_data(
             console=console,
             host=host,
             fetchraw=fetchraw,
-            fetchdumps=fetchdumps if api_token else False,
+            fetchdumps=fetchdumps,
             fetchprocessed=fetchprocessed,
             outputdir=outputdir,
             api_token=api_token,

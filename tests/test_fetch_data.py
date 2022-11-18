@@ -178,8 +178,10 @@ def test_fetch_dumps(tmpdir):
     raw_crash = {
         "ProductName": "Firefox",
         "Version": "100.0",
-        "dump_checksums": {
-            "upload_file_minidump": minidump_checksum,
+        "metadata": {
+            "dump_checksums": {
+                "upload_file_minidump": minidump_checksum,
+            },
         },
     }
 
