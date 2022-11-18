@@ -16,6 +16,7 @@ from crashstats_tools.utils import (
     DEFAULT_HOST,
     http_get,
     INFINITY,
+    MissingField,
     parse_args,
     tableize_markdown,
     tableize_tab,
@@ -266,31 +267,47 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         table = Table(show_edge=False, show_header=headers)
         for column in params["_columns"]:
             table.add_column(column, justify="left")
-        for hit in hits:
+
+        for hit_i, hit in enumerate(hits):
+            if hit_i == 0:
+                for field in params["_columns"]:
+                    if field not in hit:
+                        raise click.UsageError(f"{field}: no data")
+
             table.add_row(
-                *[
-                    escape_whitespace(hit.get(field, "<no data>"))
-                    for field in params["_columns"]
-                ]
+                *[escape_whitespace(hit[field]) for field in params["_columns"]]
             )
 
         console.print(table)
 
     elif format_type == "tab":
-        for line in tableize_tab(params["_columns"], data=hits, show_headers=headers):
-            # NOTE(willkg): we don't use console.print here because rich will do fancy
-            # things like wrapping and fixing tabs we don't want that
-            click.echo(line)
+        try:
+            for line in tableize_tab(
+                params["_columns"], data=hits, show_headers=headers
+            ):
+                # NOTE(willkg): we don't use console.print here because rich will do fancy
+                # things like wrapping and fixing tabs we don't want that
+                click.echo(line)
+        except MissingField as exc:
+            raise click.UsageError(f"{exc.args[0]}: no data")
 
     elif format_type == "markdown":
-        for line in tableize_markdown(params["_columns"], data=hits):
-            # NOTE(willkg): we don't use console.print here because rich will do fancy
-            # things like wrapping and fixing tabs we don't want that
-            click.echo(line)
+        try:
+            for line in tableize_markdown(params["_columns"], data=hits):
+                # NOTE(willkg): we don't use console.print here because rich will do fancy
+                # things like wrapping and fixing tabs we don't want that
+                click.echo(line)
+        except MissingField as exc:
+            raise click.UsageError(f"{exc.args[0]}: no data")
 
     elif format_type == "json":
         records = []
-        for hit in hits:
+        for hit_i, hit in enumerate(hits):
+            if hit_i == 0:
+                for field in params["_columns"]:
+                    if field not in hit:
+                        raise click.UsageError(f"{field}: no data")
+
             records.append(
                 {
                     field: escape_whitespace(hit.get(field, "<no data>"))

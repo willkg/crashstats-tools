@@ -309,6 +309,10 @@ def parse_crashid(item):
     raise ValueError(f"Not a valid crash id: {item}")
 
 
+class MissingField(Exception):
+    pass
+
+
 def tableize_tab(
     headers: List[str], data: Iterable[Dict[str, Any]], show_headers: bool = True
 ) -> Generator[str, None, None]:
@@ -320,10 +324,14 @@ def tableize_tab(
     :returns: generator of strings
 
     """
-    if show_headers:
-        yield "\t".join([escape_whitespace(str(item)) for item in headers])
+    for item_i, item in enumerate(data):
+        if item_i == 0:
+            for field in headers:
+                if field not in item:
+                    raise MissingField(field)
+            if show_headers:
+                yield "\t".join([escape_whitespace(str(item)) for item in headers])
 
-    for item in data:
         row = [escape_whitespace(str(item.get(field, ""))) for field in headers]
         yield "\t".join(row) or "<no data>"
 
@@ -339,15 +347,17 @@ def tableize_markdown(
     :returns: generator of strings
 
     """
-    if show_headers:
-        yield " | ".join([str(header) for header in headers])
-        yield " | ".join(["-" * len(str(item)) for item in headers])
+    for item_i, item in enumerate(data):
+        if item_i == 0:
+            for field in headers:
+                if field not in item:
+                    raise MissingField(field)
 
-    for item in data:
-        row = [
-            escape_pipes(escape_whitespace(str(item.get(field, ""))))
-            for field in headers
-        ]
+            if show_headers:
+                yield " | ".join([str(header) for header in headers])
+                yield " | ".join(["-" * len(str(item)) for item in headers])
+
+        row = [escape_pipes(escape_whitespace(str(item[field]))) for field in headers]
         yield " | ".join(row) or "<no data>"
 
 
