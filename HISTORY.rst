@@ -2,13 +2,38 @@
 History
 =======
 
+1.4.0 (November 18th, 2022)
+===========================
+
+Changes:
+
+* Fix supersearch to kick up a usage error when you use columns that don't
+  exist or that you don't have access to. (#61)
+* Fix supersearchfacet to kick up a usage error when you use columsn that don't
+  exist or that you don't have access to. (#62)
+* Fix fetch-data to use Socorro crashstorage layout. (#66)
+* Fix fetch-data to work with new raw crash structure.
+* Remove pkg_resources use. (#70)
+* Add markdown output to supersearch. (#52)
+* Rework output for supersearch and supersearchfacet so that format=tab can
+  stream results. This is helpful for incremental progress and when using it
+  with pipes. (#39)
+* Add support for Python 3.11 (#63)
+* Add ``--overwrite/--no-overwrite`` to fetch-data so it does less work. (#58)
+* Add support for ``--period=weekly`` to supersearchfacet. (#24)
+* Add tests for supersearchfacet. (#50)
+* Add tests for supersearch. (#16)
+* Add tests for reprocess. (#14)
+* Add tests for fetch-data. (#15)
+
+
 1.3.0 (June 28th, 2022)
 =======================
 
 Changes:
 
 * Improve output using rich. (#47)
-* Add --allow-many argument to reprocess.
+* Add ``--allow-many`` argument to reprocess.
 * Fix non-string sorting.
 * Add "remainder" column in supersearchfacet.
 
