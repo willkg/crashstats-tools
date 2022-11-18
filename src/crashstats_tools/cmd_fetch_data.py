@@ -30,12 +30,12 @@ def fetch_crash(
 ):
     """Fetch crash data and save to correct place on the file system
 
-    http://antenna.readthedocs.io/en/latest/architecture.html#aws-s3-file-hierarchy
+    https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
     """
     if fetchraw:
-        # Fetch raw crash metadata
-        fn = os.path.join(outputdir, "raw_crash", crash_id)
+        # Fetch raw crash metadata to OUTPUTDIR/raw_crash/DATE/CRASHID
+        fn = os.path.join(outputdir, "raw_crash", "20" + crash_id[-6:], crash_id)
         if os.path.exists(fn) and not overwrite:
             console.print(
                 f"[bold green]Fetching raw {crash_id}[/bold green] ... already exists"
@@ -143,7 +143,7 @@ def fetch_crash(
 @click.option(
     "--dumps/--no-dumps",
     "fetchdumps",
-    default=True,
+    default=False,
     help="whether or not to save dumps",
 )
 @click.option(
@@ -183,15 +183,17 @@ def fetch_data(
     Crash data is split up into directories: raw_crash/, dump_names/,
     processed_crash/, and directories with the same name as the dump type.
 
+    https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
+
     This requires an API token in order to download dumps, personally identifiable
     information, and security-sensitive data. It also reduces rate-limiting.  Set
     the CRASHSTATS_API_TOKEN environment variable to your API token value:
 
-        CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
+    CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
 
     To create an API token for Crash Stats, visit:
 
-        https://crash-stats.mozilla.org/api/tokens/
+    https://crash-stats.mozilla.org/api/tokens/
 
     Remember to abide by the data access policy when using data from Crash Stats!
     The policy is specified here:
