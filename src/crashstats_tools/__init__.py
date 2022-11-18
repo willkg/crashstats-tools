@@ -4,7 +4,7 @@
 
 
 # yyyymmdd
-__releasedate__ = "20220628"
+__releasedate__ = "20221118"
 
 # x.y.z or x.y.z.dev0 -- semver
-__version__ = "1.3.0"
+__version__ = "1.4.0"
