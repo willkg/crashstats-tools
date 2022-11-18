@@ -62,6 +62,10 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     This requires CRASHSTATS_API_TOKEN to be set in the environment to a valid
     API token.
 
+    To create an API token for Crash Stats, visit:
+
+    https://crash-stats.mozilla.org/api/tokens/
+
     Note: If you're processing more than 10,000 crashes, you should use a sleep
     value that balances the rate of crash ids being added to the queue and the
     rate of crash ids being processed. For example, you could use "--sleep 10"

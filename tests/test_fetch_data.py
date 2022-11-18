@@ -65,7 +65,9 @@ def test_fetch_raw(tmpdir):
         Done!
         """
     )
-    data = pathlib.Path(tmpdir / "raw_crash" / crash_id).read_bytes()
+    data = pathlib.Path(
+        tmpdir / "raw_crash" / f"20{crash_id[-6:]}" / crash_id
+    ).read_bytes()
     assert json.loads(data) == raw_crash
 
 
@@ -114,7 +116,9 @@ def test_fetch_raw_with_token(tmpdir):
         Done!
         """
     )
-    data = pathlib.Path(tmpdir / "raw_crash" / crash_id).read_bytes()
+    data = pathlib.Path(
+        tmpdir / "raw_crash" / f"20{crash_id[-6:]}" / crash_id
+    ).read_bytes()
     assert json.loads(data) == raw_crash
 
 
@@ -240,7 +244,9 @@ def test_fetch_dumps(tmpdir):
         Done!
         """
     )
-    data = pathlib.Path(tmpdir / "raw_crash" / crash_id).read_bytes()
+    data = pathlib.Path(
+        tmpdir / "raw_crash" / f"20{crash_id[-6:]}" / crash_id
+    ).read_bytes()
     assert json.loads(data) == raw_crash
 
     data = pathlib.Path(tmpdir / "upload_file_minidump" / crash_id).read_bytes()
@@ -387,5 +393,7 @@ def test_host(tmpdir):
         Done!
         """
     )
-    data = pathlib.Path(tmpdir / "raw_crash" / crash_id).read_bytes()
+    data = pathlib.Path(
+        tmpdir / "raw_crash" / f"20{crash_id[-6:]}" / crash_id
+    ).read_bytes()
     assert json.loads(data) == raw_crash
