@@ -268,7 +268,10 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
             table.add_column(column, justify="left")
         for hit in hits:
             table.add_row(
-                *[escape_whitespace(hit[field]) for field in params["_columns"]]
+                *[
+                    escape_whitespace(hit.get(field, "<no data>"))
+                    for field in params["_columns"]
+                ]
             )
 
         console.print(table)
@@ -289,7 +292,10 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         records = []
         for hit in hits:
             records.append(
-                {field: escape_whitespace(hit[field]) for field in params["_columns"]}
+                {
+                    field: escape_whitespace(hit.get(field, "<no data>"))
+                    for field in params["_columns"]
+                }
             )
         console.print_json(json.dumps(records))
 
