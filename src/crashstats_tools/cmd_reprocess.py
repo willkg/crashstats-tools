@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from datetime import timedelta
 import os
 import sys
 import time
@@ -120,9 +121,11 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
         )
 
     console.print(
-        f"[bold green]Reprocessing {len(to_process)} crashes sleeping {sleep} "
+        f"[bold green]Reprocessing {len(to_process):,} crashes sleeping {sleep} "
         + "seconds between groups...[/bold green]"
     )
+    estimate = timedelta(seconds=int(len(to_process) / CHUNK_SIZE * (sleep + 0.5)))
+    console.print(f"[bold green]Rough estimate: {estimate}")
 
     if len(to_process) > 10000 and not allow_many:
         console.print(
@@ -137,6 +140,8 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
         console.print("[yellow]Use --allow-many argument to reprocess.[/yellow]")
         ctx.exit(1)
 
+    start_time = time.time()
+
     groups = list(chunked(to_process, CHUNK_SIZE))
     for i, group in enumerate(groups):
         if i > 0:
@@ -148,9 +153,22 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
         last_crashid = group[-1]
         this_group = i + 1
         total_groups = len(groups)
+
+        # Calculate a running estimate, but only after 5 groups when it starts
+        # to stabilize
+        if i < 5:
+            estimate = ""
+        else:
+            seconds_per_group = int((time.time() - start_time) / (this_group + 1))
+            estimate = str(
+                timedelta(seconds=seconds_per_group * (len(groups) - this_group + 1))
+            )
+
         console.print(
-            f"Processing group ending with {last_crashid} ... "
-            + f"({this_group}/{total_groups})"
+            (
+                f"Processing group ending with {last_crashid} ... "
+                + f"({this_group}/{total_groups}) {estimate}"
+            ).strip()
         )
 
         if ruleset:

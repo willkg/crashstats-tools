@@ -75,6 +75,7 @@ def test_reprocess_from_args():
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
+        Rough estimate: 0:00:00
         Processing group ending with 2ac9a763-83d2-4dca-89bb-091bd0220630 ... (1/1)
         Done!
         """
@@ -114,6 +115,7 @@ def test_reprocess_from_stdin():
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
+        Rough estimate: 0:00:00
         Processing group ending with 2ac9a763-83d2-4dca-89bb-091bd0220630 ... (1/1)
         Done!
         """
@@ -154,6 +156,7 @@ def test_reprocess_with_ruleset():
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
+        Rough estimate: 0:00:00
         Processing group ending with 2ac9a763-83d2-4dca-89bb-091bd0220630 ... (1/1)
         Done!
         """
@@ -193,6 +196,7 @@ def test_reprocess_host():
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: http://example.com/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
+        Rough estimate: 0:00:00
         Processing group ending with 2ac9a763-83d2-4dca-89bb-091bd0220630 ... (1/1)
         Done!
         """
@@ -230,7 +234,8 @@ def test_reprocess_tenthousand():
         """\
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
-        Reprocessing 10010 crashes sleeping 1 seconds between groups...
+        Reprocessing 10,010 crashes sleeping 1 seconds between groups...
+        Rough estimate: 0:05:00
         You are trying to reprocess more than 10,000 crash reports at once.
         Please let us know on #crashreporting on Matrix before you do this.
 
@@ -272,7 +277,8 @@ def test_reprocess_tenthousand_allowmany():
             f"""\
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
-        Reprocessing 10010 crashes sleeping 0 seconds between groups...
+        Reprocessing 10,010 crashes sleeping 0 seconds between groups...
+        Rough estimate: 0:01:40
         Processing group ending with {crash_ids[49]} ... (1/201)
         Processing group ending with {crash_ids[99]} ... (2/201)
         """
@@ -282,9 +288,9 @@ def test_reprocess_tenthousand_allowmany():
     assert result.output.endswith(
         dedent(
             f"""\
-        Processing group ending with {crash_ids[9_949]} ... (199/201)
-        Processing group ending with {crash_ids[9_999]} ... (200/201)
-        Processing group ending with {crash_ids[10_009]} ... (201/201)
+        Processing group ending with {crash_ids[9_949]} ... (199/201) 0:00:00
+        Processing group ending with {crash_ids[9_999]} ... (200/201) 0:00:00
+        Processing group ending with {crash_ids[10_009]} ... (201/201) 0:00:00
         Done!
         """
         )
