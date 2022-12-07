@@ -30,3 +30,7 @@ checkrot:  ## Check package rot for dev dependencies
 	./tmpvenv/bin/pip install -r requirements-dev.txt
 	./tmpvenv/bin/pip list -o
 	rm -rf ./tmpvenv/
+
+.PHONY: docs
+docs:  ## Update README with fresh cog output
+	cog -r README.rst

@@ -51,7 +51,90 @@ Tools
 supersearch
 -----------
 
-Perform Super Search queries on Crash Stats.
+.. [[[cog
+    from crashstats_tools.cmd_supersearch import supersearch
+    from click.testing import CliRunner
+    result = CliRunner().invoke(supersearch, ["--help"])
+    cog.out("::\n\n")
+    for line in result.output.splitlines():
+        if line.strip():
+            cog.out(f"   {line}\n")
+        else:
+            cog.out("\n")
+    ]]]
+::
+
+   Usage: supersearch [OPTIONS]
+
+     Fetches data from Crash Stats using Super Search
+
+     There are two ways to run this:
+
+     First, you can specify Super Search API fields to generate the query.
+
+     For example:
+
+     $ supersearch --product=Firefox --num=100 --date='>=2019-07-31'
+
+     Second, you can pass in a url from a Super Search on Crash Stats. This command
+     will then pull out the parameters. You can override those parameters with
+     command line arguments.
+
+     $ supersearch --supersearch-url='longurlhere' --num=100
+
+     Make sure to use single quotes when specifying values so that your shell
+     doesn't expand variables.
+
+     Returned fields are tab-delimited. You can specify them using the Super Search
+     field "_columns".
+
+     For example:
+
+     $ supersearch --_columns=uuid --_columns=product --_columns=build_id
+     --_columns=version
+
+     Results are tab-delimited. Tabs and newlines in output is escaped.
+
+     This doesn't support any of the aggregations at this time.
+
+     For list of available fields and Super Search API documentation, see:
+
+     https://crash-stats.mozilla.org/documentation/supersearch/
+
+     https://crash-stats.mozilla.org/documentation/supersearch/api/
+
+     This requires an API token in order to download search and download personally
+     identifiable information and security-sensitive data. It also reduces rate-
+     limiting. Set the CRASHSTATS_API_TOKEN environment variable to your API token
+     value:
+
+     CRASHSTATS_API_TOKEN=xyz supersearch ...
+
+     To create an API token for Crash Stats, visit:
+
+     https://crash-stats.mozilla.org/api/tokens/
+
+     Remember to abide by the data access policy when using data from Crash Stats!
+     The policy is specified here:
+
+     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+
+   Options:
+     --host TEXT                     host for system to fetch crashids from
+                                     [default: https://crash-stats.mozilla.org]
+     --supersearch-url TEXT          Super Search url to base query on
+     --num TEXT                      number of crash ids you want or "all" for all
+                                     of them  [default: 100]
+     --headers / --no-headers        whether or not to show table headers
+                                     [default: no-headers]
+     --format [table|tab|json|markdown]
+                                     format to print output  [default: tab]
+     --verbose / --no-verbose        whether to print debugging output
+     --color / --no-color            whether or not to colorize output; note that
+                                     color is shut off when stdout is not an
+                                     interactive terminal automatically
+     --help                          Show this message and exit.
+.. [[[end]]]
 
 Fetch 10 crash ids for Firefox::
 
@@ -97,7 +180,89 @@ See Super Search API documentation for details on notation and fields:
 supersearchfacet
 ----------------
 
-Performs facets and daily-facets.
+.. [[[cog
+    from crashstats_tools.cmd_supersearchfacet import supersearchfacet
+    from click.testing import CliRunner
+    result = CliRunner().invoke(supersearchfacet, ["--help"])
+    cog.out("::\n\n")
+    for line in result.output.splitlines():
+        if line.strip():
+            cog.out(f"   {line}\n")
+        else:
+            cog.out("\n")
+    ]]]
+::
+
+   Usage: supersearchfacet [OPTIONS]
+
+     Fetches facet data from Crash Stats using Super Search
+
+     There are two ways to run this:
+
+     First, you can specify Super Search API fields to generate the query.
+
+     For example:
+
+     $ supersearchfacet --product=Firefox --_facets=version
+
+     Second, you can pass in a url from a Super Search on Crash Stats. This command
+     will then pull out the parameters. You can override those parameters with
+     command line arguments.
+
+     $ supersearchfacet --supersearch-url='longurlhere' --_facets=version
+
+     Make sure to use single quotes when specifying values so that your shell
+     doesn't expand variables.
+
+     You can only specify one facet using "--_facets". If you don't specify one, it
+     defaults to "signature".
+
+     By default, returned data is a tab-delimited table. Tabs and newlines in
+     output is escaped. Use "--format" to specify a different output format.
+
+     For list of available fields and Super Search API documentation, see:
+
+     https://crash-stats.mozilla.org/documentation/supersearch/
+
+     https://crash-stats.mozilla.org/documentation/supersearch/api/
+
+     This generates a table values and counts. If you want values and counts over a
+     series of days, use "--period=daily".
+
+     This requires an API token in order to download search and download personally
+     identifiable information and security-sensitive data. It also reduces rate-
+     limiting.  Set the CRASHSTATS_API_TOKEN environment variable to your API token
+     value:
+
+     CRASHSTATS_API_TOKEN=xyz supersearchfacet ...
+
+     To create an API token for Crash Stats, visit:
+
+     https://crash-stats.mozilla.org/api/tokens/
+
+     Remember to abide by the data access policy when using data from Crash Stats!
+     The policy is specified here:
+
+     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+
+   Options:
+     --host TEXT                     host for system to fetch facets from
+     --supersearch-url TEXT          Super Search url to base query on
+     --start-date TEXT               start date for range; YYYY-MM-DD format
+     --end-date TEXT                 end date for range; YYYY-MM-DD format;
+                                     defaults to today
+     --relative-range TEXT           relative range ending on end-date
+     --period [none|daily|hourly|weekly]
+                                     period to facet on to get count/period
+                                     [default: none]
+     --format [table|tab|markdown|json]
+                                     format to print output  [default: table]
+     --verbose / --no-verbose        whether to print debugging output
+     --color / --no-color            whether or not to colorize output; note that
+                                     color is shut off when stdout is not an
+                                     interactive terminal automatically
+     --help                          Show this message and exit.
+.. [[[end]]]
 
 See the breakdown of crash reports by product for the last 7 days::
 
@@ -128,7 +293,58 @@ See Super Search API documentation for details on notation and fields:
 fetch-data
 ----------
 
-Fetch data for specified crash reports.
+.. [[[cog
+    from crashstats_tools.cmd_fetch_data import fetch_data
+    from click.testing import CliRunner
+    result = CliRunner().invoke(fetch_data, ["--help"])
+    cog.out("::\n\n")
+    for line in result.output.splitlines():
+        if line.strip():
+            cog.out(f"   {line}\n")
+        else:
+            cog.out("\n")
+    ]]]
+::
+
+   Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASHIDS]...
+
+     Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
+
+     Given one or more crash ids via command line or stdin (one per line), fetches
+     crash data and puts it in specified directory.
+
+     Crash data is split up into directories: raw_crash/, dump_names/,
+     processed_crash/, and directories with the same name as the dump type.
+
+     https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
+
+     This requires an API token in order to download dumps, personally identifiable
+     information, and security-sensitive data. It also reduces rate-limiting.  Set
+     the CRASHSTATS_API_TOKEN environment variable to your API token value:
+
+     CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
+
+     To create an API token for Crash Stats, visit:
+
+     https://crash-stats.mozilla.org/api/tokens/
+
+     Remember to abide by the data access policy when using data from Crash Stats!
+     The policy is specified here:
+
+     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+
+   Options:
+     --host TEXT                   host to pull crash data from; this needs to
+                                   match CRASHSTATS_API_TOKEN value
+     --overwrite / --no-overwrite  whether or not to overwrite existing data
+     --raw / --no-raw              whether or not to save raw crash data
+     --dumps / --no-dumps          whether or not to save dumps
+     --processed / --no-processed  whether or not to save processed crash data
+     --color / --no-color          whether or not to colorize output; note that
+                                   color is shut off when stdout is not an
+                                   interactive terminal automatically
+     --help                        Show this message and exit.
+.. [[[end]]]
 
 This lets you download raw crash, dumps, and processed crash from Crash Stats.
 
@@ -145,7 +361,52 @@ Fetch raw crash data using supersearch command to generate crash ids::
 reprocess
 ---------
 
-Let's you specify crash reports for reprocessing.
+.. [[[cog
+    from crashstats_tools.cmd_reprocess import reprocess
+    from click.testing import CliRunner
+    result = CliRunner().invoke(reprocess, ["--help"])
+    cog.out("::\n\n")
+    for line in result.output.splitlines():
+        if line.strip():
+            cog.out(f"   {line}\n")
+        else:
+            cog.out("\n")
+    ]]]
+::
+
+   Usage: reprocess [OPTIONS] [CRASHIDS]...
+
+     Sends specified crashes for reprocessing
+
+     This requires CRASHSTATS_API_TOKEN to be set in the environment to a valid API
+     token.
+
+     To create an API token for Crash Stats, visit:
+
+     https://crash-stats.mozilla.org/api/tokens/
+
+     Note: If you're processing more than 10,000 crashes, you should use a sleep
+     value that balances the rate of crash ids being added to the queue and the
+     rate of crash ids being processed. For example, you could use "--sleep 10"
+     which will sleep for 10 seconds between submitting groups of crashes.
+
+     Also, if you're processing a lot of crashes, you should let us know before you
+     do it.
+
+   Options:
+     --host TEXT                     host for system to reprocess in  [default:
+                                     https://crash-stats.mozilla.org]
+     --sleep INTEGER                 how long in seconds to sleep before submitting
+                                     the next group  [default: 1]
+     --ruleset TEXT                  processor pipeline ruleset to use for
+                                     reprocessing these crash ids
+     --allow-many / --no-allow-many  don't prompt user about letting us know about
+                                     reprocessing more than 10,000 crashes
+     --color / --no-color            whether or not to colorize output; note that
+                                     color is shut off when stdout is not an
+                                     interactive terminal automatically
+     --help                          Show this message and exit.
+.. [[[end]]]
 
 Reprocess an individual crash report::
 
