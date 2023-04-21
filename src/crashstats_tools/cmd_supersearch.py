@@ -230,10 +230,10 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     else:
         try:
             num_results = int(num_results)
-        except ValueError:
+        except ValueError as exc:
             raise click.BadOptionUsage(
                 "num", 'num needs to be an integer or "all"', ctx=ctx
-            )
+            ) from exc
 
     if verbose:
         console.print(f"Params: {params}")
@@ -289,7 +289,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
                 # things like wrapping and fixing tabs we don't want that
                 click.echo(line)
         except MissingField as exc:
-            raise click.UsageError(f"{exc.args[0]}: no data")
+            raise click.UsageError(f"{exc.args[0]}: no data") from exc
 
     elif format_type == "markdown":
         try:
@@ -298,7 +298,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
                 # things like wrapping and fixing tabs we don't want that
                 click.echo(line)
         except MissingField as exc:
-            raise click.UsageError(f"{exc.args[0]}: no data")
+            raise click.UsageError(f"{exc.args[0]}: no data") from exc
 
     elif format_type == "json":
         records = []

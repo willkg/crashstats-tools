@@ -267,8 +267,8 @@ def supersearchfacet(
     if "date" not in params and not start_date:
         try:
             range_timedelta = parse_relative_date(relative_range)
-        except ValueError as ve:
-            raise click.UsageError(ve.msg)
+        except ValueError as vexc:
+            raise click.UsageError(vexc.msg) from vexc
 
         start_date = (
             datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
@@ -374,10 +374,10 @@ def supersearchfacet(
     values = set()
 
     table = facet_tables[facet_name]
-    for date, value_counts in table.items():
+    for value_counts in table.values():
         values = values | set(value_counts.keys())
 
-    for date, value_counts in table.items():
+    for value_counts in table.values():
         missing_values = values - set(value_counts.keys())
         for missing_value in missing_values:
             value_counts[missing_value] = 0
