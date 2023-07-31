@@ -177,10 +177,9 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     https://crash-stats.mozilla.org/documentation/supersearch/api/
 
-    This requires an API token in order to download search and download personally
-    identifiable information and security-sensitive data. It also reduces
-    rate-limiting. Set the CRASHSTATS_API_TOKEN environment variable to your API
-    token value:
+    This requires an API token in order to search and get results for protected
+    data. Using an API token also reduces rate-limiting. Set the
+    CRASHSTATS_API_TOKEN environment variable to your API token value:
 
     CRASHSTATS_API_TOKEN=xyz supersearch ...
 
@@ -191,7 +190,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     Remember to abide by the data access policy when using data from Crash Stats!
     The policy is specified here:
 
-    https://crash-stats.mozilla.org/documentation/memory_dump_access/
+    https://crash-stats.mozilla.org/documentation/protected_data_access/
     """
     host = host.rstrip("/")
 
