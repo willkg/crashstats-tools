@@ -103,10 +103,9 @@ supersearch
 
      https://crash-stats.mozilla.org/documentation/supersearch/api/
 
-     This requires an API token in order to download search and download personally
-     identifiable information and security-sensitive data. It also reduces rate-
-     limiting. Set the CRASHSTATS_API_TOKEN environment variable to your API token
-     value:
+     This requires an API token in order to search and get results for protected
+     data. Using an API token also reduces rate-limiting. Set the
+     CRASHSTATS_API_TOKEN environment variable to your API token value:
 
      CRASHSTATS_API_TOKEN=xyz supersearch ...
 
@@ -117,7 +116,7 @@ supersearch
      Remember to abide by the data access policy when using data from Crash Stats!
      The policy is specified here:
 
-     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+     https://crash-stats.mozilla.org/documentation/protected_data_access/
 
    Options:
      --host TEXT                     host for system to fetch crashids from
@@ -229,10 +228,9 @@ supersearchfacet
      This generates a table values and counts. If you want values and counts over a
      series of days, use "--period=daily".
 
-     This requires an API token in order to download search and download personally
-     identifiable information and security-sensitive data. It also reduces rate-
-     limiting.  Set the CRASHSTATS_API_TOKEN environment variable to your API token
-     value:
+     This requires an API token in order to search and get results for protected
+     data. Using an API token also reduces rate-limiting. Set the
+     CRASHSTATS_API_TOKEN environment variable to your API token value:
 
      CRASHSTATS_API_TOKEN=xyz supersearchfacet ...
 
@@ -243,7 +241,7 @@ supersearchfacet
      Remember to abide by the data access policy when using data from Crash Stats!
      The policy is specified here:
 
-     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+     https://crash-stats.mozilla.org/documentation/protected_data_access/
 
    Options:
      --host TEXT                     host for system to fetch facets from
@@ -318,9 +316,9 @@ fetch-data
 
      https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
-     This requires an API token in order to download dumps, personally identifiable
-     information, and security-sensitive data. It also reduces rate-limiting.  Set
-     the CRASHSTATS_API_TOKEN environment variable to your API token value:
+     This requires an API token in order to download dumps and protected data.
+     Using an API token also reduces rate-limiting. Set the CRASHSTATS_API_TOKEN
+     environment variable to your API token value:
 
      CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
 
@@ -331,7 +329,7 @@ fetch-data
      Remember to abide by the data access policy when using data from Crash Stats!
      The policy is specified here:
 
-     https://crash-stats.mozilla.org/documentation/memory_dump_access/
+     https://crash-stats.mozilla.org/documentation/protected_data_access/
 
    Options:
      --host TEXT                   host to pull crash data from; this needs to

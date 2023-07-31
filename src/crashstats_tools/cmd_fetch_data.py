@@ -185,9 +185,9 @@ def fetch_data(
 
     https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
-    This requires an API token in order to download dumps, personally identifiable
-    information, and security-sensitive data. It also reduces rate-limiting.  Set
-    the CRASHSTATS_API_TOKEN environment variable to your API token value:
+    This requires an API token in order to download dumps and protected data.
+    Using an API token also reduces rate-limiting. Set the CRASHSTATS_API_TOKEN
+    environment variable to your API token value:
 
     CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
 
@@ -198,7 +198,7 @@ def fetch_data(
     Remember to abide by the data access policy when using data from Crash Stats!
     The policy is specified here:
 
-    https://crash-stats.mozilla.org/documentation/memory_dump_access/
+    https://crash-stats.mozilla.org/documentation/protected_data_access/
     """
     host = host.rstrip("/")
 
