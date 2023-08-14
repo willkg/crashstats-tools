@@ -34,11 +34,24 @@ class AlwaysFirst:
         return True
 
 
+@functools.total_ordering
+class AlwaysLast:
+    def __eq__(self, other):
+        # Two AlwaysLast instances are always equal
+        return type(other) == type(self)
+
+    def __lt__(self, other):
+        # This is always greater than other
+        return False
+
+
 def thing_to_key(item):
     if isinstance(item, (list, tuple)):
         item = item[0]
     if item == "--":
         return AlwaysFirst()
+    if item == "total":
+        return AlwaysLast()
     return item
 
 
@@ -293,7 +306,7 @@ def supersearchfacet(
 
         facet_name = params["_facets"][0]
 
-        remaining = facet_data["total"]
+        total = facet_data["total"]
         facets = facet_data["facets"]
 
         if facet_name not in facets:
@@ -305,8 +318,10 @@ def supersearchfacet(
             {facet_name: item["term"], "count": item["count"]}
             for item in sorted(facet_item_data, key=lambda x: x["count"], reverse=True)
         ]
-        remaining -= sum([item["count"] for item in facet_item_data])
 
+        records.append({facet_name: "total", "count": total})
+
+        remaining = total - sum([item["count"] for item in facet_item_data])
         if remaining:
             records.append({facet_name: "--", "count": remaining})
 
@@ -360,14 +375,17 @@ def supersearchfacet(
             verbose=verbose,
         )
 
-        remaining = facet_data["total"]
+        total = remaining = facet_data["total"]
         facets = facet_data["facets"]
 
         for item in facets.get(facet_name, []):
             count = item["count"]
-            facet_tables[facet_name].setdefault(day_start, {})[item["term"]] = count
+            facet_tables[facet_name].setdefault(day_start, {})[
+                str(item["term"])
+            ] = count
             remaining -= count
         facet_tables[facet_name].setdefault(day_start, {})["--"] = remaining
+        facet_tables[facet_name].setdefault(day_start, {})["total"] = total
 
     # Normalize the data--make sure table rows have all the values
     values = set()
