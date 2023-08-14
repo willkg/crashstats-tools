@@ -64,6 +64,7 @@ def test_basic():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -112,6 +113,7 @@ def test_host():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -161,6 +163,7 @@ def test_token():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -215,6 +218,7 @@ def test_dates():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -267,6 +271,7 @@ def test_relative_date():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -319,6 +324,7 @@ def test_supersearch_url():
         product\tcount
         Firefox\t5
         Fenix\t4
+        total\t19
         --\t10
         """
     )
@@ -367,6 +373,7 @@ def test_markdown():
         ------- | -----
         Firefox | 5
         Fenix | 4
+        total | 19
         -- | 10
         """
     )
@@ -419,6 +426,10 @@ def test_json():
           {
             "product": "Fenix",
             "count": 4
+          },
+          {
+            "product": "total",
+            "count": 19
           },
           {
             "product": "--",
@@ -550,11 +561,11 @@ def test_period_daily():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        date\t--\tFenix\tFirefox
-        2022-06-28 00:00:00\t10\t4\t5
-        2022-06-29 00:00:00\t10\t4\t4
-        2022-06-30 00:00:00\t10\t3\t6
-        2022-07-01 00:00:00\t12\t3\t7
+        date\t--\tFenix\tFirefox\ttotal
+        2022-06-28 00:00:00\t10\t4\t5\t19
+        2022-06-29 00:00:00\t10\t4\t4\t18
+        2022-06-30 00:00:00\t10\t3\t6\t19
+        2022-07-01 00:00:00\t12\t3\t7\t22
         """
     )
 
@@ -573,12 +584,12 @@ def test_period_daily():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        date | -- | Fenix | Firefox
-        ---- | -- | ----- | -------
-        2022-06-28 00:00:00 | 10 | 4 | 5
-        2022-06-29 00:00:00 | 10 | 4 | 4
-        2022-06-30 00:00:00 | 10 | 3 | 6
-        2022-07-01 00:00:00 | 12 | 3 | 7
+        date | -- | Fenix | Firefox | total
+        ---- | -- | ----- | ------- | -----
+        2022-06-28 00:00:00 | 10 | 4 | 5 | 19
+        2022-06-29 00:00:00 | 10 | 4 | 4 | 18
+        2022-06-30 00:00:00 | 10 | 3 | 6 | 19
+        2022-07-01 00:00:00 | 12 | 3 | 7 | 22
         """
     )
 
@@ -602,25 +613,29 @@ def test_period_daily():
             "date": "2022-06-28 00:00:00",
             "--": 10,
             "Fenix": 4,
-            "Firefox": 5
+            "Firefox": 5,
+            "total": 19
           },
           {
             "date": "2022-06-29 00:00:00",
             "--": 10,
             "Fenix": 4,
-            "Firefox": 4
+            "Firefox": 4,
+            "total": 18
           },
           {
             "date": "2022-06-30 00:00:00",
             "--": 10,
             "Fenix": 3,
-            "Firefox": 6
+            "Firefox": 6,
+            "total": 19
           },
           {
             "date": "2022-07-01 00:00:00",
             "--": 12,
             "Fenix": 3,
-            "Firefox": 7
+            "Firefox": 7,
+            "total": 22
           }
         ]
         """
@@ -774,11 +789,11 @@ def test_period_weekly():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        date\t--\tFenix\tFirefox
-        2022-06-01 00:00:00\t12\t3\t7
-        2022-06-08 00:00:00\t10\t3\t6
-        2022-06-15 00:00:00\t10\t4\t4
-        2022-06-22 00:00:00\t10\t4\t5
-        2022-06-29 00:00:00\t10\t4\t5
+        date\t--\tFenix\tFirefox\ttotal
+        2022-06-01 00:00:00\t12\t3\t7\t22
+        2022-06-08 00:00:00\t10\t3\t6\t19
+        2022-06-15 00:00:00\t10\t4\t4\t18
+        2022-06-22 00:00:00\t10\t4\t5\t19
+        2022-06-29 00:00:00\t10\t4\t5\t19
         """
     )
