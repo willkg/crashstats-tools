@@ -18,6 +18,7 @@ from crashstats_tools.utils import (
     http_get,
     parse_args,
     parse_relative_date,
+    tableize_csv,
     tableize_markdown,
     tableize_tab,
 )
@@ -151,7 +152,9 @@ def extract_supersearch_params(url):
     "format_type",
     default="table",
     show_default=True,
-    type=click.Choice(["table", "tab", "markdown", "json"], case_sensitive=False),
+    type=click.Choice(
+        ["table", "tab", "csv", "markdown", "json"], case_sensitive=False
+    ),
     help="format to print output",
 )
 @click.option(
@@ -334,6 +337,12 @@ def supersearchfacet(
                 table.add_row(*[str(item[field]) for field in headers])
             console.print(table)
 
+        elif format_type == "csv":
+            # NOTE(willkg): We need to use click.echo because console.print
+            # does rich fancy-stuff with the output
+            for line in tableize_csv(headers=headers, data=records):
+                click.echo(line)
+
         elif format_type == "tab":
             # NOTE(willkg): We need to use click.echo because console.print
             # does rich fancy-stuff with the output
@@ -429,6 +438,12 @@ def supersearchfacet(
         for item in records:
             table.add_row(*[str(item[field]) for field in headers])
         console.print(table)
+
+    elif format_type == "csv":
+        # NOTE(willkg): We need to use click.echo because console.print
+        # does rich fancy-stuff with the output
+        for line in tableize_csv(headers=headers, data=records):
+            click.echo(line)
 
     elif format_type == "tab":
         # NOTE(willkg): We need to use click.echo because console.print
