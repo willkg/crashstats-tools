@@ -2,8 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import csv
 import datetime
 from functools import total_ordering
+import io
 import json
 import re
 from typing import Any, Dict, Generator, Iterable, List
@@ -311,6 +313,35 @@ def parse_crashid(item):
 
 class MissingField(Exception):
     pass
+
+
+def tableize_csv(
+    headers: List[str], data: Iterable[Dict[str, Any]], show_headers: bool = True
+) -> Generator[str, None, None]:
+    """Generate output for a table in csv.
+
+    :param headers: headers of the table
+    :param data: rows of the table
+
+    :returns: generator of strings
+
+    """
+    buffer = io.StringIO()
+    csvwriter = csv.writer(buffer)
+    for item_i, item in enumerate(data):
+        if item_i == 0:
+            for field in headers:
+                if field not in item:
+                    raise MissingField(field)
+            if show_headers:
+                csvwriter.writerow([escape_whitespace(str(item)) for item in headers])
+
+        row = [escape_whitespace(str(item.get(field, ""))) for field in headers]
+        if row:
+            csvwriter.writerow(row)
+
+    for line in buffer.getvalue().splitlines():
+        yield line
 
 
 def tableize_tab(

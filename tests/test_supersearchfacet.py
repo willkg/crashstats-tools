@@ -332,6 +332,54 @@ def test_supersearch_url():
 
 @freezegun.freeze_time("2022-07-01 12:00:00")
 @responses.activate
+def test_csv():
+    supersearch_data = {
+        "hits": [],
+        "total": 19,
+        "facets": {
+            "product": [
+                {"term": "Firefox", "count": 5},
+                {"term": "Fenix", "count": 4},
+            ]
+        },
+        "errors": [],
+    }
+
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json=supersearch_data,
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli=cmd_supersearchfacet.supersearchfacet,
+        args=["--_facets=product", "--format=csv"],
+        env={"COLUMNS": "100"},
+    )
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        product,count
+        Firefox,5
+        Fenix,4
+        total,19
+        --,10
+        """
+    )
+
+
+@freezegun.freeze_time("2022-07-01 12:00:00")
+@responses.activate
 def test_markdown():
     supersearch_data = {
         "hits": [],
