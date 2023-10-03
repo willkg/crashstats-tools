@@ -64,7 +64,6 @@ def fetch_crash(
 
             # Fetch dumps
             for dump_name in dump_names:
-
                 # We store "upload_file_minidump" as "dump", so we need to use that
                 # name when requesting from the RawCrash api
                 file_name = dump_name
