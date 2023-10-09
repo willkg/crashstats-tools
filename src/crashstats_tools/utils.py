@@ -219,6 +219,32 @@ class Infinity:
 INFINITY = Infinity()
 
 
+@total_ordering
+class AlwaysFirst:
+    """This item is always first."""
+
+    def __eq__(self, other):
+        # Two AlwaysFirst instances are always equal
+        return type(other) == type(self)
+
+    def __lt__(self, other):
+        # This is always less than other
+        return True
+
+
+@total_ordering
+class AlwaysLast:
+    """This item is always last."""
+
+    def __eq__(self, other):
+        # Two AlwaysLast instances are always equal
+        return type(other) == type(self)
+
+    def __lt__(self, other):
+        # This is always greater than other
+        return False
+
+
 class InvalidArg(Exception):
     pass
 
