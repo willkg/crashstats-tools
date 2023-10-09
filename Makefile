@@ -16,20 +16,12 @@ clean:  ## Clean build artifacts
 
 .PHONY: lint
 lint:  ## Lint and black reformat files
-	black setup.py src tests
+	tox exec -e py38-lint -- black setup.py src tests
 	tox -e py38-lint
 
 .PHONY: test
 test:  ## Run tests
 	tox
-
-.PHONY: checkrot
-checkrot:  ## Check package rot for dev dependencies
-	python -m venv ./tmpvenv/
-	./tmpvenv/bin/pip install -U pip
-	./tmpvenv/bin/pip install -r requirements-dev.txt
-	./tmpvenv/bin/pip list -o
-	rm -rf ./tmpvenv/
 
 .PHONY: docs
 docs:  ## Update README with fresh cog output
