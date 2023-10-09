@@ -144,7 +144,12 @@ def extract_supersearch_params(url):
 @click.pass_context
 def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, color):
     """
-    Fetches data from Crash Stats using Super Search
+    Performs a basic search on Crash Stats using the Super Search API and
+    outputs the results.
+
+    A basic search uses filters and can span multiple pages of results. A basic
+    search cannot include facets, aggregations, histograms, or cardinalities.
+    For those, use supersearchfacet.
 
     There are two ways to run this:
 
@@ -154,25 +159,23 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     $ supersearch --product=Firefox --num=100 --date='>=2019-07-31'
 
-    Second, you can pass in a url from a Super Search on Crash Stats. This command
-    will then pull out the parameters. You can override those parameters with
-    command line arguments.
+    Second, you can pass in a url from a Super Search on Crash Stats. This
+    command will then pull out the filter parameters. You can override those
+    parameters with command line arguments.
 
     $ supersearch --supersearch-url='longurlhere' --num=100
 
     Make sure to use single quotes when specifying values so that your shell doesn't
-    expand variables.
+    expand variables or parse escape sequences.
 
-    Returned fields are tab-delimited. You can specify them using the Super Search
-    field "_columns".
+    You can specify returned fields using the Super Search field "_columns".
 
     For example:
 
     $ supersearch --_columns=uuid --_columns=product --_columns=build_id --_columns=version
 
-    Results are tab-delimited. Tabs and newlines in output is escaped.
-
-    This doesn't support any of the aggregations at this time.
+    Results are tab-delimited by default. You can specify other output formats
+    using "--format". Tabs and newlines in output are escaped.
 
     For list of available fields and Super Search API documentation, see:
 
