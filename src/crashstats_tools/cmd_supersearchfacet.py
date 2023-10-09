@@ -3,7 +3,6 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
-import functools
 import json
 import logging
 import os
@@ -12,8 +11,11 @@ from urllib.parse import urlparse, parse_qs
 import click
 from rich.console import Console
 from rich.table import Table
+from rich import box
 
 from crashstats_tools.utils import (
+    AlwaysFirst,
+    AlwaysLast,
     DEFAULT_HOST,
     http_get,
     parse_args,
@@ -22,28 +24,6 @@ from crashstats_tools.utils import (
     tableize_markdown,
     tableize_tab,
 )
-
-
-@functools.total_ordering
-class AlwaysFirst:
-    def __eq__(self, other):
-        # Two AlwaysFirst instances are always equal
-        return type(other) == type(self)
-
-    def __lt__(self, other):
-        # This is always less than other
-        return True
-
-
-@functools.total_ordering
-class AlwaysLast:
-    def __eq__(self, other):
-        # Two AlwaysLast instances are always equal
-        return type(other) == type(self)
-
-    def __lt__(self, other):
-        # This is always greater than other
-        return False
 
 
 def thing_to_key(item):
@@ -89,7 +69,7 @@ def fetch_supersearch_facets(console, host, params, api_token=None, verbose=Fals
     :arg str api_token: the API token to use or None
     :arg bool verbose: whether or not to print verbose things
 
-    :returns: dict with "total" and "facets" keys
+    :returns: response payload as a Python dict
 
     """
     url = host + "/api/SuperSearch/"
@@ -100,6 +80,7 @@ def fetch_supersearch_facets(console, host, params, api_token=None, verbose=Fals
         console.print(f"{url} {params}")
 
     resp = http_get(url=url, params=params, api_token=api_token)
+    resp.raise_for_status()
     return resp.json()
 
 
@@ -115,6 +96,10 @@ def extract_supersearch_params(url):
             del params[key]
 
     return params
+
+
+def convert_dict_to_list(facet_name, data):
+    return [{"key": facet_name, "value": data["value"]}]
 
 
 @click.command(
@@ -255,10 +240,6 @@ def supersearchfacet(
     if "_facets" not in params:
         params["_facets"] = ["signature"]
 
-    if len(params["_facets"]) > 1:
-        raise click.UsageError("One '_facets' must be specified.")
-        ctx.exit(1)
-
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if verbose:
@@ -302,63 +283,84 @@ def supersearchfacet(
             api_token=api_token,
             verbose=verbose,
         )
+
+        if format_type == "raw":
+            console.print_json(json.dumps(facet_data_payload))
+            return 0
+
         facet_data = {
             "total": facet_data_payload["total"],
             "facets": facet_data_payload["facets"],
         }
 
-        facet_name = params["_facets"][0]
-
         total = facet_data["total"]
         facets = facet_data["facets"]
+        len_facets = len(facets)
 
-        if facet_name not in facets:
-            raise click.UsageError(f"{facet_name}: no data")
+        for i, facet_name in enumerate(facets.keys()):
+            include_total = True
+            if not facets[facet_name]:
+                continue
 
-        if format_type == "raw":
-            console.print_json(json.dumps(facet_data))
-            return 0
+            facet_item_data = facets[facet_name]
+            if isinstance(facet_item_data, dict):
+                include_total = False
+                facet_item_data = convert_dict_to_list(facet_name, facet_item_data)
 
-        headers = [facet_name, "count"]
-        facet_item_data = facets[facet_name]
-        records = [
-            {facet_name: item["term"], "count": item["count"]}
-            for item in sorted(facet_item_data, key=lambda x: x["count"], reverse=True)
-        ]
+            if "term" in facet_item_data[0]:
+                name_key = "term"
+                value_key = "count"
 
-        records.append({facet_name: "total", "count": total})
+            elif "key" in facet_item_data[0]:
+                name_key = "key"
+                value_key = "value"
 
-        remaining = total - sum([item["count"] for item in facet_item_data])
-        if remaining:
-            records.append({facet_name: "--", "count": remaining})
+            headers = [facet_name, value_key]
+            records = [
+                {facet_name: item[name_key], value_key: item[value_key]}
+                for item in sorted(
+                    facet_item_data, key=lambda x: x[value_key], reverse=True
+                )
+            ]
 
-        if format_type == "table":
-            table = Table(show_edge=False)
-            for column in headers:
-                table.add_column(column, justify="left")
+            if include_total:
+                records.append({facet_name: "total", value_key: total})
 
-            for item in records:
-                table.add_row(*[str(item[field]) for field in headers])
-            console.print(table)
+                remaining = total - sum([item[value_key] for item in facet_item_data])
+                if remaining:
+                    records.append({facet_name: "(missing)", value_key: remaining})
 
-        elif format_type == "csv":
-            # NOTE(willkg): We need to use click.echo because console.print
-            # does rich fancy-stuff with the output
-            for line in tableize_csv(headers=headers, data=records):
-                click.echo(line)
+            if format_type == "table":
+                table = Table(show_edge=False, box=box.MARKDOWN)
+                for column in headers:
+                    table.add_column(column, justify="left")
 
-        elif format_type == "tab":
-            # NOTE(willkg): We need to use click.echo because console.print
-            # does rich fancy-stuff with the output
-            for line in tableize_tab(headers=headers, data=records):
-                click.echo(line)
+                for item in records:
+                    table.add_row(*[str(item[field]) for field in headers])
+                console.print(table)
 
-        elif format_type == "markdown":
-            for line in tableize_markdown(headers=headers, data=records):
-                click.echo(line)
+            elif format_type == "csv":
+                # NOTE(willkg): We need to use click.echo because console.print
+                # does rich fancy-stuff with the output
+                for line in tableize_csv(headers=headers, data=records):
+                    click.echo(line)
 
-        elif format_type == "json":
-            console.print_json(json.dumps(records))
+            elif format_type == "tab":
+                # NOTE(willkg): We need to use click.echo because console.print
+                # does rich fancy-stuff with the output
+                for line in tableize_tab(headers=headers, data=records):
+                    click.echo(line)
+
+            elif format_type == "markdown":
+                for line in tableize_markdown(headers=headers, data=records):
+                    click.echo(line)
+
+            elif format_type == "json":
+                console.print_json(json.dumps(records))
+
+            # Add a blank line between facets
+            if len_facets > i + 1 > 0:
+                console.print()
 
         return
 
