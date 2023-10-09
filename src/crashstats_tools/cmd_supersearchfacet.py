@@ -100,11 +100,7 @@ def fetch_supersearch_facets(console, host, params, api_token=None, verbose=Fals
         console.print(f"{url} {params}")
 
     resp = http_get(url=url, params=params, api_token=api_token)
-    data = resp.json()
-    return {
-        "total": data["total"],
-        "facets": data["facets"],
-    }
+    return resp.json()
 
 
 def extract_supersearch_params(url):
@@ -153,7 +149,7 @@ def extract_supersearch_params(url):
     default="table",
     show_default=True,
     type=click.Choice(
-        ["table", "tab", "csv", "markdown", "json"], case_sensitive=False
+        ["table", "tab", "csv", "markdown", "json", "raw"], case_sensitive=False
     ),
     help="format to print output",
 )
@@ -299,13 +295,17 @@ def supersearchfacet(
         if verbose:
             console.print(f"Params: {params}")
 
-        facet_data = fetch_supersearch_facets(
+        facet_data_payload = fetch_supersearch_facets(
             console=console,
             host=host,
             params=params,
             api_token=api_token,
             verbose=verbose,
         )
+        facet_data = {
+            "total": facet_data_payload["total"],
+            "facets": facet_data_payload["facets"],
+        }
 
         facet_name = params["_facets"][0]
 
@@ -314,6 +314,10 @@ def supersearchfacet(
 
         if facet_name not in facets:
             raise click.UsageError(f"{facet_name}: no data")
+
+        if format_type == "raw":
+            console.print_json(json.dumps(facet_data))
+            return 0
 
         headers = [facet_name, "count"]
         facet_item_data = facets[facet_name]
