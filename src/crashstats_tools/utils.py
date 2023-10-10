@@ -8,6 +8,7 @@ from functools import total_ordering
 import io
 import json
 import re
+import string
 from typing import Any, Dict, Generator, Iterable, List
 from urllib.parse import urlparse
 
@@ -33,6 +34,13 @@ def escape_whitespace(text):
 def escape_pipes(text):
     text = text or ""
     return text.replace("|", "\\|")
+
+
+def sanitize_text(item):
+    if not isinstance(item, str):
+        return item
+    text = "".join([c for c in item if c in string.printable])
+    return text
 
 
 class JsonDTEncoder(json.JSONEncoder):

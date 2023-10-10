@@ -20,6 +20,7 @@ from crashstats_tools.utils import (
     http_get,
     parse_args,
     parse_relative_date,
+    sanitize_text,
     tableize_csv,
     tableize_markdown,
     tableize_tab,
@@ -38,27 +39,6 @@ def thing_to_key(item):
 
 def now():
     return datetime.datetime.now()
-
-
-def generate_periods(period, start_date, end_date):
-    start_point = datetime.datetime.strptime(start_date, "%Y-%m-%d")
-    end_point = datetime.datetime.strptime(end_date, "%Y-%m-%d")
-
-    if period == "daily":
-        delta = datetime.timedelta(days=1)
-
-    elif period == "hourly":
-        delta = datetime.timedelta(hours=1)
-
-    elif period == "weekly":
-        delta = datetime.timedelta(days=7)
-
-    while start_point <= end_point:
-        next_end_point = start_point + delta
-        yield start_point.strftime("%Y-%m-%d %H:%M:%S"), next_end_point.strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-        start_point = next_end_point
 
 
 def fetch_supersearch_facets(console, host, params, api_token=None, verbose=False):
@@ -98,8 +78,116 @@ def extract_supersearch_params(url):
     return params
 
 
-def convert_dict_to_list(facet_name, data):
-    return [{"key": facet_name, "value": data["value"]}]
+def convert_cardinality_data(facet_data, facet_name, total):
+    """Convert cardinality result to record data
+
+    Data is like::
+
+        {
+            "cardinality_product": {
+                "value": 6,
+            }
+        }
+
+    And we want to return::
+
+        {
+            "cardinality_product": [
+                {"cardinality_product": "value", "value": 6},
+            ]
+        }
+
+    :arg facet_data: the facet results from the response payload
+    :arg facet_name: the facet name
+
+    :returns: a map of facet_name -> list of record dicts
+
+    """
+    # FIXME(willkg): this output is redundant--need a better way to structure
+    # this
+    data = facet_data[facet_name]
+    return {facet_name: [{facet_name: "value", "value": data["value"]}]}
+
+
+def convert_histogram_data(facet_data, facet_name, total):
+    """Converts histogram facet data into records
+
+    :arg facet_data: the facet results from the response payload
+    :arg facet_name: the facet name
+
+    :returns: a map of facet_name -> list of record dicts
+
+    """
+    data = facet_data[facet_name]
+    # Map of field_name -> (map of date -> (map of term -> count))
+    facet_tables = {}
+    for row in data:
+        row_term = row["term"]
+        if row_term.endswith("T00:00:00+00:00"):
+            # Convert timestamps that are just a date at midnight to just the
+            # date portion
+            row_term = row_term[:10]
+        total = row["count"]
+        records = {}
+        for field_name, field_data in row["facets"].items():
+            records = {item["term"]: item["count"] for item in field_data}
+            records["--"] = total - sum(records.values())
+            records["total"] = total
+            facet_tables.setdefault(field_name, {})[row_term] = records
+
+    # Normalize the data--make sure table rows have all the values
+    for field_data in facet_tables.values():
+        terms = set()
+        for date_data in field_data.values():
+            terms = terms | set(date_data.keys())
+
+        for date_data in field_data.values():
+            missing_terms = terms - set(date_data.keys())
+            for missing_term in missing_terms:
+                date_data[missing_term] = 0
+
+    # Now convert it to map of field_name -> records
+    result = {}
+    for field_name, field_data in facet_tables.items():
+        keys = list(field_data.values())[0].keys()
+        headers = [facet_name] + sorted(keys, key=thing_to_key)
+
+        records = []
+        for row_key, row_data in sorted(field_data.items()):
+            row = {facet_name: row_key}
+            row.update(
+                {column: sanitize_text(row_data[column]) for column in headers[1:]}
+            )
+            records.append(row)
+        result[field_name] = records
+
+    return result
+
+
+def convert_facet_data(facet_data, facet_name, total):
+    """Convert facet data to records that can be printed
+
+    This doesn't yet support nested aggregations.
+
+    :arg facet_data: the facet results from the response payload
+    :arg facet_name: the facet name
+
+    :returns: a map of facet_name -> {headers: headers, records: records}
+
+    """
+    # FIXME(willkg): add support for nested aggregations
+    data = facet_data[facet_name]
+    records = []
+    count_sum = 0
+    for item in sorted(data, key=lambda x: x["count"], reverse=True):
+        records.append(
+            {facet_name: sanitize_text(item["term"]), "count": item["count"]}
+        )
+        count_sum += item["count"]
+    records.append({facet_name: "--", "count": total - count_sum})
+    records.append({facet_name: "total", "count": total})
+
+    return {facet_name: records}
 
 
 @click.command(
@@ -120,13 +208,6 @@ def convert_dict_to_list(facet_name, data):
 )
 @click.option(
     "--relative-range", default="7d", help="relative range ending on end-date"
-)
-@click.option(
-    "--period",
-    default="none",
-    show_default=True,
-    type=click.Choice(["none", "daily", "hourly", "weekly"], case_sensitive=False),
-    help="period to facet on to get count/period",
 )
 @click.option(
     "--format",
@@ -157,7 +238,6 @@ def supersearchfacet(
     end_date,
     start_date,
     relative_range,
-    period,
     format_type,
     verbose,
     color,
@@ -184,17 +264,19 @@ def supersearchfacet(
     You can only specify one facet using "--_facets". If you don't specify one,
     it defaults to "signature".
 
-    By default, returned data is a tab-delimited table. Tabs and newlines in
-    output is escaped. Use "--format" to specify a different output format.
+    You can perform histograms, too. For example, this shows you counts for products
+    per day for the last week:
+
+    $ supersearchfacet --_histogram.date=product --relative-range=1w
+
+    By default, returned data is a tab-delimited. Tabs and newlines in output
+    is escaped. Use "--format" to specify a different output format.
 
     For list of available fields and Super Search API documentation, see:
 
     https://crash-stats.mozilla.org/documentation/supersearch/
 
     https://crash-stats.mozilla.org/documentation/supersearch/api/
-
-    This generates a table values and counts. If you want values and counts
-    over a series of days, use "--period=daily".
 
     This requires an API token in order to search and get results for protected
     data. Using an API token also reduces rate-limiting. Set the
@@ -214,9 +296,9 @@ def supersearchfacet(
     host = host.rstrip("/")
 
     if not color:
-        console = Console(color_system=None)
+        console = Console(color_system=None, tab_size=None)
     else:
-        console = Console()
+        console = Console(tab_size=None)
 
     if end_date is None:
         end_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -238,7 +320,7 @@ def supersearchfacet(
     params.update(parsed_args)
 
     if "_facets" not in params:
-        params["_facets"] = ["signature"]
+        params["_facets"] = []
 
     # Sort out API token existence
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
@@ -266,205 +348,86 @@ def supersearchfacet(
             datetime.datetime.strptime(end_date, "%Y-%m-%d") - range_timedelta
         ).strftime("%Y-%m-%d")
 
-    # If there's no count/period or the user used a supersearch-url that
-    # specifies a date, then we can do a single facet and print the data out
-    # and we're done
-    if period == "none" or "date" in params:
-        if "date" not in params:
-            params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
+    if "date" not in params:
+        params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
-        if verbose:
-            console.print(f"Params: {params}")
+    if verbose:
+        console.print(f"Params: {params}")
 
-        facet_data_payload = fetch_supersearch_facets(
-            console=console,
-            host=host,
-            params=params,
-            api_token=api_token,
-            verbose=verbose,
-        )
+    facet_data_payload = fetch_supersearch_facets(
+        console=console,
+        host=host,
+        params=params,
+        api_token=api_token,
+        verbose=verbose,
+    )
 
-        if format_type == "raw":
-            console.print_json(json.dumps(facet_data_payload))
-            return 0
+    if (
+        "signature" not in params["_facets"]
+        and "signature" in facet_data_payload["facets"]
+    ):
+        # The Super Search API adds a "signature" facet by default if no other
+        # "_facets" are specified even when you don't want it--this removes it
+        del facet_data_payload["facets"]["signature"]
 
-        facet_data = {
-            "total": facet_data_payload["total"],
-            "facets": facet_data_payload["facets"],
-        }
+    if format_type == "raw":
+        console.print_json(json.dumps(facet_data_payload))
+        return 0
 
-        total = facet_data["total"]
-        facets = facet_data["facets"]
-        len_facets = len(facets)
+    total = facet_data_payload["total"]
+    facets = facet_data_payload["facets"]
 
-        for i, facet_name in enumerate(facets.keys()):
-            include_total = True
-            if not facets[facet_name]:
-                continue
+    # We want to print a blank line between things, so we print a blank line
+    # before any thing that's not the first thing
+    first_thing = True
 
-            facet_item_data = facets[facet_name]
-            if isinstance(facet_item_data, dict):
-                include_total = False
-                facet_item_data = convert_dict_to_list(facet_name, facet_item_data)
+    for facet_name in facets.keys():
+        if facet_name.startswith("cardinality"):
+            facet_tables = convert_cardinality_data(facets, facet_name, total)
 
-            if "term" in facet_item_data[0]:
-                name_key = "term"
-                value_key = "count"
+        elif facet_name.startswith("histogram"):
+            facet_tables = convert_histogram_data(facets, facet_name, total)
 
-            elif "key" in facet_item_data[0]:
-                name_key = "key"
-                value_key = "value"
+        else:
+            facet_tables = convert_facet_data(facets, facet_name, total)
 
-            headers = [facet_name, value_key]
-            records = [
-                {facet_name: item[name_key], value_key: item[value_key]}
-                for item in sorted(
-                    facet_item_data, key=lambda x: x[value_key], reverse=True
-                )
-            ]
+        if format_type == "json":
+            console.print_json(json.dumps(facet_tables))
+            continue
 
-            if include_total:
-                records.append({facet_name: "total", value_key: total})
+        for field, records in facet_tables.items():
+            # Grab the first record keys, take out the facet_name, sort, and
+            # then add the facet_name first
+            headers = list(records[0].keys())
+            headers.remove(facet_name)
+            headers = [facet_name] + sorted(headers, key=thing_to_key)
 
-                remaining = total - sum([item[value_key] for item in facet_item_data])
-                if remaining:
-                    records.append({facet_name: "(missing)", value_key: remaining})
+            if not first_thing:
+                console.print()
 
+            console.print(field)
             if format_type == "table":
                 table = Table(show_edge=False, box=box.MARKDOWN)
                 for column in headers:
                     table.add_column(column, justify="left")
 
-                for item in records:
-                    table.add_row(*[str(item[field]) for field in headers])
+                for record in records:
+                    table.add_row(*[str(record[header]) for header in headers])
                 console.print(table)
 
             elif format_type == "csv":
-                # NOTE(willkg): We need to use click.echo because console.print
-                # does rich fancy-stuff with the output
                 for line in tableize_csv(headers=headers, data=records):
-                    click.echo(line)
+                    console.file.write(line + "\n")
 
             elif format_type == "tab":
-                # NOTE(willkg): We need to use click.echo because console.print
-                # does rich fancy-stuff with the output
                 for line in tableize_tab(headers=headers, data=records):
-                    click.echo(line)
+                    console.file.write(line + "\n")
 
             elif format_type == "markdown":
                 for line in tableize_markdown(headers=headers, data=records):
-                    click.echo(line)
+                    console.file.write(line + "\n")
 
-            elif format_type == "json":
-                console.print_json(json.dumps(records))
-
-            # Add a blank line between facets
-            if len_facets > i + 1 > 0:
-                console.print()
-
-        return
-
-    # If it is in count/period mode, then we have to do one facet for each
-    # period and compose the results.
-
-    # Figure out what facet we're doing
-    facet_name = params["_facets"][0]
-
-    # Map of facet_name -> (map of date -> (map of value -> count))
-    facet_tables = {facet_name: {}}
-
-    # FIXME(willkg): for "period=weekly", does it make sense to anchor it on
-    # beginning of the week? (sunday or monday)
-
-    for day_start, day_end in generate_periods(period, start_date, end_date):
-        params.update({"date": [">=%s" % day_start, "<%s" % day_end]})
-
-        if verbose:
-            console.print(f"Params: {params}")
-
-        facet_data = fetch_supersearch_facets(
-            console=console,
-            host=host,
-            params=params,
-            api_token=api_token,
-            verbose=verbose,
-        )
-
-        total = remaining = facet_data["total"]
-        facets = facet_data["facets"]
-
-        for item in facets.get(facet_name, []):
-            count = item["count"]
-            facet_tables[facet_name].setdefault(day_start, {})[
-                str(item["term"])
-            ] = count
-            remaining -= count
-        facet_tables[facet_name].setdefault(day_start, {})["--"] = remaining
-        facet_tables[facet_name].setdefault(day_start, {})["total"] = total
-
-    # Normalize the data--make sure table rows have all the values
-    values = set()
-
-    table = facet_tables[facet_name]
-    for value_counts in table.values():
-        values = values | set(value_counts.keys())
-
-    for value_counts in table.values():
-        missing_values = values - set(value_counts.keys())
-        for missing_value in missing_values:
-            value_counts[missing_value] = 0
-
-    table = facet_tables[facet_name]
-
-    if not table:
-        raise click.UsageError(f"{facet_name}: no data")
-
-    some_date = list(table.keys())[0]
-    headers = ["date"] + sorted(table[some_date].keys(), key=thing_to_key)
-    records = []
-    for date, value_counts in table.items():
-        records.append(
-            {
-                field_name: val
-                for field_name, val in zip(
-                    headers,
-                    [date]
-                    + [
-                        item[1]
-                        for item in sorted(value_counts.items(), key=thing_to_key)
-                    ],
-                )
-            }
-        )
-
-    if format_type == "table":
-        table = Table(show_edge=False)
-        for column in headers:
-            table.add_column(column, justify="left")
-        for item in records:
-            table.add_row(*[str(item[field]) for field in headers])
-        console.print(table)
-
-    elif format_type == "csv":
-        # NOTE(willkg): We need to use click.echo because console.print
-        # does rich fancy-stuff with the output
-        for line in tableize_csv(headers=headers, data=records):
-            click.echo(line)
-
-    elif format_type == "tab":
-        # NOTE(willkg): We need to use click.echo because console.print
-        # does rich fancy-stuff with the output
-        for line in tableize_tab(headers=headers, data=records):
-            click.echo(line)
-
-    elif format_type == "markdown":
-        # NOTE(willkg): We need to use click.echo because console.print
-        # does rich fancy-stuff with the output
-        for line in tableize_markdown(headers=headers, data=records):
-            click.echo(line)
-
-    elif format_type == "json":
-        console.print_json(json.dumps(records))
+            first_thing = False
 
 
 if __name__ == "__main__":
