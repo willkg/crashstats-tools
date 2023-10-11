@@ -190,6 +190,29 @@ def convert_facet_data(facet_data, facet_name, total):
     return {facet_name: records}
 
 
+DATE_TEMPLATES = [
+    "%Y-%m-%d",
+    "%Y-%m-%dT%H:%M:%S+%z",
+]
+
+
+def is_weekend(value):
+    for template in DATE_TEMPLATES:
+        try:
+            dt = datetime.datetime.strptime(value, template)
+            return dt.weekday() in [5, 6]
+        except ValueError:
+            continue
+    return False
+
+
+def fix_value(value, denote_weekends):
+    if denote_weekends and isinstance(value, str) and is_weekend(value):
+        return f"{value} **"
+
+    return str(value)
+
+
 @click.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
 )
@@ -230,6 +253,13 @@ def convert_facet_data(facet_data, facet_name, total):
         "when stdout is not an interactive terminal automatically"
     ),
 )
+@click.option(
+    "--denote-weekends/--no-denote-weekends",
+    default=False,
+    help=(
+        "This will add a * for values that are datestamps and on a Saturday or Sunday."
+    ),
+)
 @click.pass_context
 def supersearchfacet(
     ctx,
@@ -241,6 +271,7 @@ def supersearchfacet(
     format_type,
     verbose,
     color,
+    denote_weekends,
 ):
     """Fetches facet data from Crash Stats using Super Search
 
@@ -402,6 +433,11 @@ def supersearchfacet(
             headers.remove(facet_name)
             headers = [facet_name] + sorted(headers, key=thing_to_key)
 
+            records = [
+                {key: fix_value(val, denote_weekends) for key, val in record.items()}
+                for record in records
+            ]
+
             if not first_thing:
                 console.print()
 
@@ -412,7 +448,7 @@ def supersearchfacet(
                     table.add_column(column, justify="left")
 
                 for record in records:
-                    table.add_row(*[str(record[header]) for header in headers])
+                    table.add_row(*[record[header] for header in headers])
                 console.print(table)
 
             elif format_type == "csv":
