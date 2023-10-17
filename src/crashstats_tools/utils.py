@@ -444,3 +444,23 @@ def parse_relative_date(text):
 
     unit_to_arg = {"h": "hours", "d": "days", "w": "weeks"}
     return datetime.timedelta(**{unit_to_arg[unit]: count})
+
+
+def thing_to_key(item):
+    """Returns a sorting key for the item
+
+    This causes "--" to always be first and "total" to always
+    be last.
+
+    For lists/tuples, this picks the first item.
+
+    :returns: a key
+
+    """
+    if isinstance(item, (list, tuple)):
+        item = item[0]
+    if item == "--":
+        return AlwaysFirst()
+    if item == "total":
+        return AlwaysLast()
+    return item

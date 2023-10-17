@@ -14,8 +14,6 @@ from rich.table import Table
 from rich import box
 
 from crashstats_tools.utils import (
-    AlwaysFirst,
-    AlwaysLast,
     DEFAULT_HOST,
     http_get,
     parse_args,
@@ -24,21 +22,8 @@ from crashstats_tools.utils import (
     tableize_csv,
     tableize_markdown,
     tableize_tab,
+    thing_to_key,
 )
-
-
-def thing_to_key(item):
-    if isinstance(item, (list, tuple)):
-        item = item[0]
-    if item == "--":
-        return AlwaysFirst()
-    if item == "total":
-        return AlwaysLast()
-    return item
-
-
-def now():
-    return datetime.datetime.now()
 
 
 def fetch_supersearch_facets(console, host, params, api_token=None, verbose=False):
