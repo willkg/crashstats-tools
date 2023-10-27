@@ -214,7 +214,11 @@ def fix_value(value, denote_weekends):
 
 
 @click.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+    context_settings={
+        "show_default": True,
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    }
 )
 @click.option(
     "--host", default=DEFAULT_HOST, help="host for system to fetch facets from"
@@ -225,9 +229,9 @@ def fix_value(value, denote_weekends):
 )
 @click.option(
     "--end-date",
-    default=None,
+    default="today",
     show_default=True,
-    help="end date for range; YYYY-MM-DD format; defaults to today",
+    help="end date for range; YYYY-MM-DD format",
 )
 @click.option(
     "--relative-range", default="7d", help="relative range ending on end-date"
@@ -331,7 +335,7 @@ def supersearchfacet(
     else:
         console = Console(tab_size=None)
 
-    if end_date is None:
+    if end_date == "today":
         end_date = datetime.datetime.now().strftime("%Y-%m-%d")
 
     # Require at least one facet specified.

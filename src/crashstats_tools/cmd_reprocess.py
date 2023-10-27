@@ -18,7 +18,7 @@ CHUNK_SIZE = 50
 SLEEP_DEFAULT = 1
 
 
-@click.command()
+@click.command(context_settings={"show_default": True})
 @click.option(
     "--host",
     default=DEFAULT_HOST,

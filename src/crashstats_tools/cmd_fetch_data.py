@@ -122,7 +122,7 @@ def fetch_crash(
                 json.dump(resp.json(), fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
 
 
-@click.command()
+@click.command(context_settings={"show_default": True})
 @click.option(
     "--host",
     default=DEFAULT_HOST,
