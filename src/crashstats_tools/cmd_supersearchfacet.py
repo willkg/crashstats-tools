@@ -50,7 +50,14 @@ def fetch_supersearch_facets(console, host, params, api_token=None, verbose=Fals
 
 
 def extract_supersearch_params(url):
-    """Parses out params from the query string and drops any search-related ones."""
+    """Parses out params from the query string and drops any search-related ones.
+
+    :arg url: a url string
+
+    :returns: dict of params from url minus params specific to supersearch
+        results
+
+    """
     parsed = urlparse(url)
     params = parse_qs(parsed.query)
 
@@ -63,52 +70,18 @@ def extract_supersearch_params(url):
     return params
 
 
-def convert_cardinality_data(leftover_count, facet_data, facet_name, total):
-    """Convert cardinality result to record data
-
-    Data is like::
-
-        {
-            "cardinality_product": {
-                "value": 6,
-            }
-        }
-
-    And we want to return::
-
-        {
-            "cardinality_product": [
-                {"cardinality_product": "value", "value": 6},
-            ]
-        }
-
-    :arg leftover_count: whether or not to calculate the leftover count
-    :arg facet_data: the facet results from the response payload
-    :arg facet_name: the facet name
-
-    :returns: a map of facet_name -> list of record dicts
-
-    """
-    # FIXME(willkg): this output is redundant--need a better way to structure
-    # this
-    data = facet_data[facet_name]
-    return {facet_name: [{facet_name: "value", "value": data["value"]}]}
-
-
-def convert_histogram_data(leftover_count, facet_data, facet_name, total):
+def convert_histogram_data(facet_name, facet_data):
     """Converts histogram facet data into records
 
-    :arg leftover_count: whether or not to calculate the leftover count
-    :arg facet_data: the facet results from the response payload
     :arg facet_name: the facet name
+    :arg facet_data: the facet results from the response payload
 
     :returns: a map of facet_name -> list of record dicts
 
     """
-    data = facet_data[facet_name]
     # Map of field_name -> (map of date -> (map of term -> count))
     facet_tables = {}
-    for row in data:
+    for row in facet_data:
         row_term = row["term"]
         if row_term.endswith("T00:00:00+00:00"):
             # Convert timestamps that are just a date at midnight to just the
@@ -117,10 +90,11 @@ def convert_histogram_data(leftover_count, facet_data, facet_name, total):
         total = row["count"]
         records = {}
         for field_name, field_data in row["facets"].items():
-            records = {item["term"]: item["count"] for item in field_data}
-            if leftover_count:
-                records["--"] = total - sum(records.values())
-            records["total"] = total
+            if field_name.startswith("cardinality"):
+                records = {"value": field_data["value"]}
+            else:
+                records = {item["term"]: item["count"] for item in field_data}
+                records["total"] = total
             facet_tables.setdefault(field_name, {})[row_term] = records
 
     # Normalize the data--make sure table rows have all the values
@@ -152,30 +126,70 @@ def convert_histogram_data(leftover_count, facet_data, facet_name, total):
     return result
 
 
-def convert_facet_data(leftover_count, facet_data, facet_name, total):
-    """Convert facet data to records that can be printed
+def flatten_facets(facet_data):
+    """Flattens facet value data.
 
-    This doesn't yet support nested aggregations.
+    :arg facet_data: map of key -> term_counts
 
-    :arg leftover_count: whether or not to calculate the leftover count
-    :arg facet_data: the facet results from the response payload
-    :arg facet_name: the facet name
+    :returns: map of key -> list of record dicts
 
+    """
+    if not facet_data:
+        return {}
+
+    flattened_facet_data = {}
+    for key, term_counts in facet_data.items():
+        if key.startswith("cardinality"):
+            # term_counts here is something like: {"value": 6}
+            #
+            # convert to [{"term": "value", "count": "6"}]
+            flattened_facet_data[key] = [{key: "value", "value": term_counts["value"]}]
+
+        elif key.startswith("histogram"):
+            flattened_facet_data[key] = convert_histogram_data(key, term_counts)
+
+        else:
+            for term_count_item in term_counts:
+                term = term_count_item["term"]
+                count = term_count_item["count"]
+
+                if "facets" in term_count_item:
+                    term_counts_dict = flatten_facets(term_count_item["facets"])
+                    for term_key, term_data in term_counts_dict.items():
+                        new_key = f"{key} / {term_key}"
+                        for item in term_data:
+                            new_data = {
+                                new_key: f"{term} / {item[term_key]}",
+                            }
+                            # cardinality has "value", while facets have
+                            # "count" so we need to handle both here
+                            new_data["count"] = item.get("count", item.get("value"))
+                            flattened_facet_data.setdefault(new_key, []).append(
+                                new_data
+                            )
+
+                else:
+                    new_data = {key: term, "count": count}
+                    flattened_facet_data.setdefault(key, []).append(new_data)
+
+    return flattened_facet_data
+
+
+def generate_facet_tables(leftover_count, facet_name, facet_data, total):
+    """
     :returns: a map of facet_name -> {headers: headers, records: records}
 
     """
-    # FIXME(willkg): add support for nested aggregations
-    data = facet_data[facet_name]
     records = []
     count_sum = 0
-    for item in sorted(data, key=lambda x: x["count"], reverse=True):
-        records.append(
-            {facet_name: sanitize_text(item["term"]), "count": item["count"]}
-        )
-        count_sum += item["count"]
-    if leftover_count:
-        records.append({facet_name: "--", "count": total - count_sum})
-    records.append({facet_name: "total", "count": total})
+    for term, count in sorted(facet_data.items(), key=lambda x: x[1], reverse=True):
+        records.append({facet_name: sanitize_text(term), "count": count})
+        count_sum += count
+
+    if not facet_name.startswith("cardinality"):
+        if leftover_count:
+            records.append({facet_name: "--", "count": total - count_sum})
+        records.append({facet_name: "total", "count": total})
 
     return {facet_name: records}
 
@@ -187,6 +201,13 @@ DATE_TEMPLATES = [
 
 
 def is_weekend(value):
+    """Denotes whether this date is a weekend.
+
+    :arg value: a string value representing a date/datetime
+
+    :returns: whether or not this is a weekend
+
+    """
     for template in DATE_TEMPLATES:
         try:
             dt = datetime.datetime.strptime(value, template)
@@ -196,11 +217,21 @@ def is_weekend(value):
     return False
 
 
-def fix_value(value, denote_weekends):
+def fix_value(value, denote_weekends=False):
+    """Sanitizes text and adds ``**`` if it's a weekend if specified
+
+    :arg value: the text to operate on
+    :arg denote_weekends: whether or not to denote weekend if the item is a
+        date/datetime and it's a weekend
+
+    :returns: the final value
+
+    """
+    value = sanitize_text(str(value))
     if denote_weekends and isinstance(value, str) and is_weekend(value):
         return f"{value} **"
 
-    return str(value)
+    return value
 
 
 @click.command(
@@ -331,8 +362,10 @@ def supersearchfacet(
 
     if not color:
         console = Console(color_system=None, tab_size=None)
+        console_err = Console(color_system=None, tab_size=None, stderr=True)
     else:
         console = Console(tab_size=None)
+        console_err = Console(tab_size=None, stderr=True)
 
     if end_date == "today":
         end_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -406,82 +439,93 @@ def supersearchfacet(
 
     if format_type == "raw":
         console.print_json(json.dumps(facet_data_payload))
-        return 0
+        return
 
     total = facet_data_payload["total"]
     facets = facet_data_payload["facets"]
 
+    flattened_facets = flatten_facets(facets)
+
+    # Add leftover and total records
+    for facet_name, records in flattened_facets.items():
+        if not facet_name.startswith(("histogram", "cardinality")):
+            if leftover_count:
+                record_sum = sum(rec["count"] for rec in records)
+                records.append({facet_name: "--", "count": total - record_sum})
+
+            records.append({facet_name: "total", "count": total})
+
+    if format_type == "json":
+        console.print_json(json.dumps(flattened_facets))
+        return
+
     # We want to print a blank line between things, so we print a blank line
     # before any thing that's not the first thing
     first_thing = True
+    for facet_name, records in flattened_facets.items():
+        if not first_thing:
+            console.print()
 
-    for facet_name in facets.keys():
-        if facet_name.startswith("cardinality"):
-            facet_tables = convert_cardinality_data(
-                leftover_count=leftover_count,
-                facet_data=facets,
-                facet_name=facet_name,
-                total=total,
+        print_table(
+            console=console,
+            format_type=format_type,
+            denote_weekends=denote_weekends,
+            facet_name=[facet_name],
+            records=records,
+        )
+        first_thing = False
+
+    if first_thing:
+        # This is weird--it means we didn't print any tables, so something is
+        # wrong.
+        console_err.print("No output.")
+        ctx.exit(1)
+
+
+def print_table(console, format_type, denote_weekends, facet_name, records):
+    if isinstance(records, dict):
+        for sub_facet_name, sub_records in records.items():
+            print_table(
+                console=console,
+                format_type=format_type,
+                denote_weekends=denote_weekends,
+                facet_name=facet_name + [sub_facet_name],
+                records=sub_records,
             )
+        return
 
-        elif facet_name.startswith("histogram"):
-            facet_tables = convert_histogram_data(
-                leftover_count=leftover_count,
-                facet_data=facets,
-                facet_name=facet_name,
-                total=total,
-            )
+    # Grab the first record keys, take out the facet_name, sort, and then
+    # add the facet_name first
+    headers = list(records[0].keys())
+    headers.remove(facet_name[0])
+    headers = [facet_name[0]] + sorted(headers, key=thing_to_key)
 
-        else:
-            facet_tables = convert_facet_data(
-                leftover_count=leftover_count,
-                facet_data=facets,
-                facet_name=facet_name,
-                total=total,
-            )
+    records = [
+        {key: fix_value(val, denote_weekends) for key, val in record.items()}
+        for record in records
+    ]
 
-        if format_type == "json":
-            console.print_json(json.dumps(facet_tables))
-            continue
+    console.print(".".join(facet_name))
+    if format_type == "table":
+        table = Table(show_edge=False, box=box.MARKDOWN)
+        for column in headers:
+            table.add_column(column, justify="left")
 
-        for field, records in facet_tables.items():
-            # Grab the first record keys, take out the facet_name, sort, and
-            # then add the facet_name first
-            headers = list(records[0].keys())
-            headers.remove(facet_name)
-            headers = [facet_name] + sorted(headers, key=thing_to_key)
+        for record in records:
+            table.add_row(*[record[header] for header in headers])
+        console.print(table)
 
-            records = [
-                {key: fix_value(val, denote_weekends) for key, val in record.items()}
-                for record in records
-            ]
+    elif format_type == "csv":
+        for line in tableize_csv(headers=headers, data=records):
+            console.file.write(line + "\n")
 
-            if not first_thing:
-                console.print()
+    elif format_type == "tab":
+        for line in tableize_tab(headers=headers, data=records):
+            console.file.write(line + "\n")
 
-            console.print(field)
-            if format_type == "table":
-                table = Table(show_edge=False, box=box.MARKDOWN)
-                for column in headers:
-                    table.add_column(column, justify="left")
-
-                for record in records:
-                    table.add_row(*[record[header] for header in headers])
-                console.print(table)
-
-            elif format_type == "csv":
-                for line in tableize_csv(headers=headers, data=records):
-                    console.file.write(line + "\n")
-
-            elif format_type == "tab":
-                for line in tableize_tab(headers=headers, data=records):
-                    console.file.write(line + "\n")
-
-            elif format_type == "markdown":
-                for line in tableize_markdown(headers=headers, data=records):
-                    console.file.write(line + "\n")
-
-            first_thing = False
+    elif format_type == "markdown":
+        for line in tableize_markdown(headers=headers, data=records):
+            console.file.write(line + "\n")
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ from textwrap import dedent
 
 from click.testing import CliRunner
 import freezegun
+import pytest
 import responses
 
 from crashstats_tools import cmd_supersearchfacet
@@ -13,7 +14,7 @@ from crashstats_tools.utils import DEFAULT_HOST
 
 
 def test_it_runs():
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--help"],
@@ -53,14 +54,14 @@ def test_host():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--host=" + host, "--_facets=product", "--format=tab"],
         env={"COLUMNS": "100"},
     )
     assert result.exit_code == 0
-    assert result.output == dedent(
+    assert result.stdout == dedent(
         """\
         product
         product\tcount
@@ -103,7 +104,7 @@ def test_token():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=tab"],
@@ -153,7 +154,7 @@ def test_dates():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=[
@@ -206,7 +207,7 @@ def test_relative_date():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=[
@@ -344,7 +345,7 @@ def test_denote_weekends():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=[
@@ -358,7 +359,7 @@ def test_denote_weekends():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        product
+        histogram_date.product
         histogram_date\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
         2022-06-24\t49585\t62097\t938\t1\t1\t18202\t130824
         2022-06-25 **\t49559\t60180\t907\t0\t0\t18888\t129534
@@ -397,7 +398,7 @@ def test_supersearch_url():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=[
@@ -422,6 +423,226 @@ def test_supersearch_url():
         total\t19
         """
     )
+
+
+@pytest.mark.parametrize(
+    "data, expected",
+    [
+        pytest.param({}, {}, id="empty_data"),
+        pytest.param(
+            {
+                "product": [
+                    {"term": "Firefox", "count": 353039},
+                    {"term": "Fenix", "count": 228578},
+                ]
+            },
+            {
+                "product": [
+                    {"product": "Firefox", "count": 353039},
+                    {"product": "Fenix", "count": 228578},
+                ]
+            },
+            id="_facets=product",
+        ),
+        pytest.param(
+            {
+                "cardinality_product": {"value": 6},
+            },
+            {"cardinality_product": [{"cardinality_product": "value", "value": 6}]},
+            id="_facets=_cardinality.product",
+        ),
+        pytest.param(
+            {
+                "histogram_date": [
+                    {
+                        "term": "2023-12-21T00:00:00+00:00",
+                        "count": 116333,
+                        "facets": {
+                            "product": [
+                                {"term": "Firefox", "count": 67152},
+                                {"term": "Fenix", "count": 33123},
+                            ]
+                        },
+                    },
+                    {
+                        "term": "2023-12-22T00:00:00+00:00",
+                        "count": 106095,
+                        "facets": {
+                            "product": [
+                                {"term": "Firefox", "count": 59209},
+                                {"term": "Fenix", "count": 32674},
+                            ]
+                        },
+                    },
+                ],
+            },
+            {
+                "histogram_date": {
+                    "product": [
+                        {
+                            "histogram_date": "2023-12-21",
+                            "Fenix": 33123,
+                            "Firefox": 67152,
+                            "total": 116333,
+                        },
+                        {
+                            "histogram_date": "2023-12-22",
+                            "Fenix": 32674,
+                            "Firefox": 59209,
+                            "total": 106095,
+                        },
+                    ],
+                },
+            },
+            id="_histogram.date=product",
+        ),
+        pytest.param(
+            {
+                "histogram_date": [
+                    {
+                        "term": "2023-12-21T00:00:00+00:00",
+                        "count": 116333,
+                        "facets": {"cardinality_product": {"value": 5}},
+                    },
+                    {
+                        "term": "2023-12-22T00:00:00+00:00",
+                        "count": 106095,
+                        "facets": {"cardinality_product": {"value": 4}},
+                    },
+                ],
+            },
+            {
+                "histogram_date": {
+                    "cardinality_product": [
+                        {"histogram_date": "2023-12-21", "value": 5},
+                        {"histogram_date": "2023-12-22", "value": 4},
+                    ],
+                },
+            },
+            id="_histogram.date=_cardinality.product",
+        ),
+        pytest.param(
+            {
+                "product": [
+                    {
+                        "term": "Firefox",
+                        "count": 353039,
+                        "facets": {
+                            "release_channel": [
+                                {"term": "release", "count": 153412},
+                                {"term": "nightly", "count": 10660},
+                            ],
+                        },
+                    },
+                    {
+                        "term": "Fenix",
+                        "count": 228578,
+                        "facets": {
+                            "release_channel": [
+                                {"term": "release", "count": 216877},
+                                {"term": "nightly", "count": 6423},
+                            ]
+                        },
+                    },
+                ],
+            },
+            {
+                "product / release_channel": [
+                    {
+                        "product / release_channel": "Firefox / release",
+                        "count": 153412,
+                    },
+                    {
+                        "product / release_channel": "Firefox / nightly",
+                        "count": 10660,
+                    },
+                    {
+                        "product / release_channel": "Fenix / release",
+                        "count": 216877,
+                    },
+                    {
+                        "product / release_channel": "Fenix / nightly",
+                        "count": 6423,
+                    },
+                ]
+            },
+            id="_aggs.product=release_channel",
+        ),
+        pytest.param(
+            {
+                "product": [
+                    {
+                        "term": "Firefox",
+                        "count": 384339,
+                        "facets": {
+                            "version": [
+                                {
+                                    "term": "115.9.1esr",
+                                    "count": 116326,
+                                    "facets": {
+                                        "cardinality_install_time": {"value": 63255}
+                                    },
+                                },
+                                {
+                                    "term": "124.0.1",
+                                    "count": 90916,
+                                    "facets": {
+                                        "cardinality_install_time": {"value": 78342}
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        "term": "Fenix",
+                        "count": 184059,
+                        "facets": {
+                            "version": [
+                                {
+                                    "term": "124.1.0",
+                                    "count": 49726,
+                                    "facets": {
+                                        "cardinality_install_time": {"value": 31191}
+                                    },
+                                },
+                                {
+                                    "term": "124.2.0",
+                                    "count": 21083,
+                                    "facets": {
+                                        "cardinality_install_time": {"value": 7776}
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+            },
+            {
+                "product / version / cardinality_install_time": [
+                    {
+                        "count": 63255,
+                        "product / version / cardinality_install_time": "Firefox / 115.9.1esr / value",
+                    },
+                    {
+                        "count": 78342,
+                        "product / version / cardinality_install_time": "Firefox / 124.0.1 / value",
+                    },
+                    {
+                        "count": 31191,
+                        "product / version / cardinality_install_time": "Fenix / 124.1.0 / value",
+                    },
+                    {
+                        "count": 7776,
+                        "product / version / cardinality_install_time": "Fenix / 124.2.0 / value",
+                    },
+                ],
+            },
+            id="_aggs.product.version=_cardinality.install_time",
+        ),
+    ],
+)
+def test_flatten_facets(data, expected):
+    assert cmd_supersearchfacet.flatten_facets(data) == expected
 
 
 @freezegun.freeze_time("2022-07-01 12:00:00")
@@ -454,7 +675,7 @@ def test_facet_product():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=tab"],
@@ -546,7 +767,7 @@ def test_cardinality_product():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=_cardinality.product", "--format=tab"],
@@ -677,7 +898,7 @@ def test_histogram_date_product():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_histogram.date=product", "--relative-range=1w", "--format=tab"],
@@ -686,7 +907,7 @@ def test_histogram_date_product():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        product
+        histogram_date.product
         histogram_date\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
         2022-06-24\t49585\t62097\t938\t1\t1\t18202\t130824
         2022-06-25\t49559\t60180\t907\t0\t0\t18888\t129534
@@ -729,7 +950,7 @@ def test_table():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=table"],
@@ -781,7 +1002,7 @@ def test_csv():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=csv"],
@@ -829,7 +1050,7 @@ def test_markdown():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=markdown"],
@@ -878,7 +1099,7 @@ def test_json():
         status=200,
         json=supersearch_data,
     )
-    runner = CliRunner()
+    runner = CliRunner(mix_stderr=False)
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=json"],
