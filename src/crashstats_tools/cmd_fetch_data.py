@@ -164,6 +164,7 @@ def fetch_crash(
 @click.option(
     "--workers",
     default=1,
+    type=click.IntRange(1, 10, clamp=True),
     help="how many workers to use to download data; requires CRASHSTATS_API_TOKEN",
 )
 @click.option(
@@ -248,12 +249,14 @@ def fetch_data(
             + "information.[/yellow]"
         )
 
-    if workers > 1 and not api_token:
-        raise click.BadOptionUsage(
-            "workers",
-            "You must specify a CRASHSTATS_API_TOKEN in order to set workers > 1.",
-            ctx=ctx,
-        )
+    if workers > 1:
+        if not api_token:
+            raise click.BadOptionUsage(
+                "workers",
+                "You must specify a CRASHSTATS_API_TOKEN in order to set workers > 1.",
+                ctx=ctx,
+            )
+        console.print(f"Using {workers} workers.")
 
     if fetchdumps and not api_token:
         raise click.BadOptionUsage(
