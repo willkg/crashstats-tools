@@ -9,7 +9,12 @@ import sys
 import click
 from rich.console import Console
 
-from crashstats_tools.utils import DEFAULT_HOST, http_get, JsonDTEncoder, parse_crashid
+from crashstats_tools.utils import (
+    DEFAULT_HOST,
+    http_get,
+    JsonDTEncoder,
+    parse_crash_id,
+)
 
 
 def create_dir_if_needed(d):
@@ -20,12 +25,12 @@ def create_dir_if_needed(d):
 def fetch_crash(
     console,
     host,
+    api_token,
+    crash_id,
     fetchraw,
     fetchdumps,
     fetchprocessed,
     outputdir,
-    api_token,
-    crash_id,
     overwrite,
 ):
     """Fetch crash data and save to correct place on the file system
@@ -33,15 +38,19 @@ def fetch_crash(
     https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
     """
+    try:
+        crash_id = parse_crash_id(crash_id).strip()
+    except ValueError:
+        console.print(f"[yellow]{crash_id}: not a valid crash id[/yellow]")
+        return
+
     if fetchraw:
         # Fetch raw crash metadata to OUTPUTDIR/raw_crash/DATE/CRASHID
         fn = os.path.join(outputdir, "raw_crash", "20" + crash_id[-6:], crash_id)
         if os.path.exists(fn) and not overwrite:
-            console.print(
-                f"[bold green]Fetching raw {crash_id}[/bold green] ... already exists"
-            )
+            console.print(f"{crash_id}: fetching raw crash -- already exists")
         else:
-            console.print(f"[bold green]Fetching raw {crash_id}[/bold green]")
+            console.print(f"{crash_id}: fetching raw crash")
             resp = http_get(
                 url=host + "/api/RawCrash/",
                 params={"crash_id": crash_id, "format": "meta"},
@@ -73,13 +82,10 @@ def fetch_crash(
                 fn = os.path.join(outputdir, dump_name, crash_id)
                 if os.path.exists(fn) and not overwrite:
                     console.print(
-                        f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green] ... "
-                        + "already exists"
+                        f"{crash_id}: fetching dump: {dump_name} -- already exists"
                     )
                 else:
-                    console.print(
-                        f"[bold green]Fetching dump {crash_id}/{dump_name}[/bold green]"
-                    )
+                    console.print(f"{crash_id}: fetching dump: {dump_name}")
                     resp = http_get(
                         url=host + "/api/RawCrash/",
                         params={
@@ -92,7 +98,7 @@ def fetch_crash(
 
                     if resp.status_code != 200:
                         raise Exception(
-                            f"Something unexpected happened. status_code {resp.status_code}, "
+                            f"{crash_id}: something unexpected happened; status_code {resp.status_code}, "
                             + f"content {resp.content}"
                         )
 
@@ -104,12 +110,9 @@ def fetch_crash(
         # Fetch processed crash data
         fn = os.path.join(outputdir, "processed_crash", crash_id)
         if os.path.exists(fn) and not overwrite:
-            console.print(
-                f"[bold green]Fetching processed {crash_id}[/bold green] ... "
-                + "already exists"
-            )
+            console.print(f"{crash_id}: fetching processed crash -- already exists")
         else:
-            console.print(f"[bold green]Fetching processed {crash_id}[/bold green]")
+            console.print(f"{crash_id}: fetching processed crash")
             resp = http_get(
                 host + "/api/ProcessedCrash/",
                 params={"crash_id": crash_id, "format": "meta"},
@@ -152,6 +155,11 @@ def fetch_crash(
     help="whether or not to save processed crash data",
 )
 @click.option(
+    "--workers",
+    default=1,
+    help="how many workers to use to download data; requires CRASHSTATS_API_TOKEN",
+)
+@click.option(
     "--color/--no-color",
     default=True,
     help=(
@@ -160,7 +168,7 @@ def fetch_crash(
     ),
 )
 @click.argument("outputdir")
-@click.argument("crashids", nargs=-1)
+@click.argument("crash_ids", nargs=-1)
 @click.pass_context
 def fetch_data(
     ctx,
@@ -169,9 +177,10 @@ def fetch_data(
     fetchraw,
     fetchdumps,
     fetchprocessed,
+    workers,
     color,
     outputdir,
-    crashids,
+    crash_ids,
 ):
     """
     Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
@@ -232,6 +241,13 @@ def fetch_data(
             + "information.[/yellow]"
         )
 
+    if workers > 1 and not api_token:
+        raise click.BadOptionUsage(
+            "workers",
+            "You must specify a CRASHSTATS_API_TOKEN in order to set workers > 1.",
+            ctx=ctx,
+        )
+
     if fetchdumps and not api_token:
         raise click.BadOptionUsage(
             "fetchdumps",
@@ -239,31 +255,23 @@ def fetch_data(
             ctx=ctx,
         )
 
-    if not crashids and not sys.stdin.isatty():
-        crashids = list(click.get_text_stream("stdin").readlines())
+    if not crash_ids and not sys.stdin.isatty():
+        crash_ids = list(click.get_text_stream("stdin").readlines())
 
-    for crashid in crashids:
-        crashid = crashid.strip()
+    for crash_id in crash_ids:
+        crash_id = crash_id.strip()
 
-        try:
-            crashid = parse_crashid(crashid).strip()
-        except ValueError:
-            console.print(f"[yellow]Crash id not recognized: {crashid}[/yellow]")
-            continue
-
-        console.print(f"[bold green]Working on {crashid}...[/bold green]")
         fetch_crash(
             console=console,
             host=host,
+            api_token=api_token,
+            crash_id=crash_id,
             fetchraw=fetchraw,
             fetchdumps=fetchdumps,
             fetchprocessed=fetchprocessed,
             outputdir=outputdir,
-            api_token=api_token,
-            crash_id=crashid,
             overwrite=overwrite,
         )
-    console.print("[bold green]Done![/bold green]")
 
 
 if __name__ == "__main__":

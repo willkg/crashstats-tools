@@ -11,7 +11,11 @@ import click
 from rich.console import Console
 from more_itertools import chunked
 
-from crashstats_tools.utils import DEFAULT_HOST, http_post, parse_crashid
+from crashstats_tools.utils import (
+    DEFAULT_HOST,
+    http_post,
+    parse_crash_id,
+)
 
 
 CHUNK_SIZE = 50
@@ -105,7 +109,7 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     for crashid in crashids:
         crashid = crashid.strip()
         try:
-            crashid = parse_crashid(crashid).strip()
+            crashid = parse_crash_id(crashid).strip()
         except ValueError:
             console.print(f"[yellow]Crash id not recognized: {crashid}[/yellow]")
             continue

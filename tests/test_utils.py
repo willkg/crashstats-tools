@@ -14,7 +14,7 @@ from crashstats_tools.utils import (
     INFINITY,
     is_crash_id_valid,
     parse_args,
-    parse_crashid,
+    parse_crash_id,
     parse_relative_date,
     tableize_markdown,
     tableize_tab,
@@ -94,14 +94,14 @@ def test_parse_args(args, expected):
         ),
     ],
 )
-def test_parse_crashid(item, expected):
-    assert parse_crashid(item) == expected
+def test_parse_crash_id(item, expected):
+    assert parse_crash_id(item) == expected
 
 
 @pytest.mark.parametrize("item", ["", "foo"])
-def test_parse_crashid_badids(item):
+def test_parse_crash_id_badids(item):
     with pytest.raises(ValueError):
-        parse_crashid(item)
+        parse_crash_id(item)
 
 
 @pytest.mark.parametrize(

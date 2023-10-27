@@ -312,8 +312,8 @@ def is_crash_id_valid(crash_id):
     return bool(CRASH_ID_RE.match(crash_id))
 
 
-def parse_crashid(item):
-    """Returns a crashid from a number of formats.
+def parse_crash_id(item):
+    """Returns a crash id from a number of formats.
 
     This handles the following three forms of crashids:
 
@@ -323,7 +323,7 @@ def parse_crashid(item):
 
     :arg str item: the thing to parse a crash id from
 
-    :returns: crashid as str or None
+    :returns: crash id as str or None
 
     :raises ValueError: if the crash id isn't recognized
 
