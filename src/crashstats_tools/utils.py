@@ -5,8 +5,10 @@
 import csv
 import datetime
 from functools import total_ordering
+import inspect
 import io
 import json
+import os
 import re
 import string
 from typing import Any, Dict, Generator, Iterable, List
@@ -14,6 +16,7 @@ from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter, Retry
+from rich.console import Console
 
 from crashstats_tools import __version__
 
@@ -22,6 +25,21 @@ DEFAULT_HOST = "https://crash-stats.mozilla.org"
 
 
 WHITESPACE_TO_ESCAPE = [("\t", "\\t"), ("\r", "\\r"), ("\n", "\\n")]
+
+
+def dbg(*args):
+    """Utility for printing debug output when debugging.
+
+    Prints the filename and line number and then a stringified list of the
+    args.
+
+    """
+    console = Console(stderr=True, tab_size=None)
+    callframe = inspect.currentframe().f_back
+    fn = callframe.f_code.co_filename.split(os.sep)[-1]
+    lineno = callframe.f_lineno
+    str_args = ", ".join(f"{arg!r}" for arg in args)
+    console.print(f"dbg: [yellow]{fn}:{lineno}[/yellow] {str_args}")
 
 
 def escape_whitespace(text):
@@ -33,11 +51,13 @@ def escape_whitespace(text):
 
 
 def escape_pipes(text):
+    """Escape pipe characters."""
     text = text or ""
     return text.replace("|", "\\|")
 
 
 def sanitize_text(item):
+    """Sanitizes text dropping all non-printable characters."""
     if not isinstance(item, str):
         return item
     text = "".join([c for c in item if c in string.printable])
@@ -255,7 +275,7 @@ class AlwaysLast:
 
 
 class InvalidArg(Exception):
-    pass
+    """Denotes an invalid command line argument."""
 
 
 def parse_args(args):
@@ -347,7 +367,7 @@ def parse_crash_id(item):
 
 
 class MissingField(Exception):
-    pass
+    """Denotes a missing field."""
 
 
 def tableize_csv(
