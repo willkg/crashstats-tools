@@ -60,9 +60,7 @@ def test_fetch_raw(tmpdir):
         """\
         No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching raw 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )
     data = pathlib.Path(
@@ -111,9 +109,7 @@ def test_fetch_raw_with_token(tmpdir):
     assert result.output == dedent(
         """\
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching raw 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )
     data = pathlib.Path(
@@ -138,7 +134,7 @@ def test_fetch_dumps_no_token(tmpdir):
         """\
         No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
-        Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASHIDS]...
+        Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
         Try 'fetch-data --help' for help.
 
         Error: You cannot fetch dumps without providing an API token.
@@ -164,7 +160,7 @@ def test_fetch_dumps_no_raw(tmpdir):
     assert result.exit_code == 2
     assert result.output == dedent(
         """\
-        Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASHIDS]...
+        Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
         Try 'fetch-data --help' for help.
 
         Error: You cannot fetch dumps without also fetching the raw crash.
@@ -238,10 +234,8 @@ def test_fetch_dumps(tmpdir):
     assert result.output == dedent(
         """\
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching raw 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Fetching dump 2ac9a763-83d2-4dca-89bb-091bd0220630/upload_file_minidump
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching dump: upload_file_minidump
         """
     )
     data = pathlib.Path(
@@ -288,9 +282,7 @@ def test_fetch_processed(tmpdir):
         """\
         No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching processed 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
         """
     )
     data = pathlib.Path(tmpdir / "processed_crash" / crash_id).read_bytes()
@@ -336,9 +328,7 @@ def test_fetch_processed_with_token(tmpdir):
     assert result.output == dedent(
         """\
         Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching processed 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
         """
     )
     data = pathlib.Path(tmpdir / "processed_crash" / crash_id).read_bytes()
@@ -388,9 +378,7 @@ def test_host(tmpdir):
         """\
         No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
-        Working on 2ac9a763-83d2-4dca-89bb-091bd0220630...
-        Fetching raw 2ac9a763-83d2-4dca-89bb-091bd0220630
-        Done!
+        2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )
     data = pathlib.Path(
