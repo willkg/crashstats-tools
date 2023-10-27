@@ -2,7 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from functools import partial
 import json
+from multiprocessing import Pool
 import os
 import sys
 
@@ -23,14 +25,14 @@ def create_dir_if_needed(d):
 
 
 def fetch_crash(
-    console,
+    crash_id,
     host,
     api_token,
-    crash_id,
     fetchraw,
     fetchdumps,
     fetchprocessed,
     outputdir,
+    color,
     overwrite,
 ):
     """Fetch crash data and save to correct place on the file system
@@ -38,6 +40,11 @@ def fetch_crash(
     https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
     """
+    if not color:
+        console = Console(color_system=None)
+    else:
+        console = Console()
+
     try:
         crash_id = parse_crash_id(crash_id).strip()
     except ValueError:
@@ -208,12 +215,12 @@ def fetch_data(
 
     https://crash-stats.mozilla.org/documentation/protected_data_access/
     """
-    host = host.rstrip("/")
-
     if not color:
         console = Console(color_system=None)
     else:
         console = Console()
+
+    host = host.rstrip("/")
 
     if fetchdumps and not fetchraw:
         raise click.BadOptionUsage(
@@ -258,20 +265,25 @@ def fetch_data(
     if not crash_ids and not sys.stdin.isatty():
         crash_ids = list(click.get_text_stream("stdin").readlines())
 
-    for crash_id in crash_ids:
-        crash_id = crash_id.strip()
+    fetch_crash_partial = partial(
+        fetch_crash,
+        host=host,
+        api_token=api_token,
+        fetchraw=fetchraw,
+        fetchdumps=fetchdumps,
+        fetchprocessed=fetchprocessed,
+        color=color,
+        outputdir=outputdir,
+        overwrite=overwrite,
+    )
 
-        fetch_crash(
-            console=console,
-            host=host,
-            api_token=api_token,
-            crash_id=crash_id,
-            fetchraw=fetchraw,
-            fetchdumps=fetchdumps,
-            fetchprocessed=fetchprocessed,
-            outputdir=outputdir,
-            overwrite=overwrite,
-        )
+    if workers > 1:
+        with Pool(workers) as p:
+            p.map(fetch_crash_partial, crash_ids)
+
+    else:
+        for crash_id in crash_ids:
+            fetch_crash_partial(crash_id)
 
 
 if __name__ == "__main__":
