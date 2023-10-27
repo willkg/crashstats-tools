@@ -98,7 +98,11 @@ def extract_supersearch_params(url):
 
 
 @click.command(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+    context_settings={
+        "show_default": True,
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+    }
 )
 @click.option(
     "--host",
