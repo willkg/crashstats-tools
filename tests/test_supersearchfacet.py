@@ -66,7 +66,6 @@ def test_host():
         product\tcount
         Firefox\t5
         Fenix\t4
-        --\t10
         total\t19
         """
     )
@@ -117,7 +116,6 @@ def test_token():
         product\tcount
         Firefox\t5
         Fenix\t4
-        --\t10
         total\t19
         """
     )
@@ -173,7 +171,6 @@ def test_dates():
         product\tcount
         Firefox\t5
         Fenix\t4
-        --\t10
         total\t19
         """
     )
@@ -227,7 +224,6 @@ def test_relative_date():
         product\tcount
         Firefox\t5
         Fenix\t4
-        --\t10
         total\t19
         """
     )
@@ -363,14 +359,14 @@ def test_denote_weekends():
     assert result.output == dedent(
         """\
         product
-        histogram_date\t--\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
-        2022-06-24\t0\t49585\t62097\t938\t1\t1\t18202\t130824
-        2022-06-25 **\t0\t49559\t60180\t907\t0\t0\t18888\t129534
-        2022-06-26 **\t0\t48276\t59486\t871\t1\t0\t18532\t127166
-        2022-06-27\t0\t49019\t55451\t957\t0\t0\t16913\t122340
-        2022-06-28\t0\t49089\t41220\t931\t0\t0\t7858\t99098
-        2022-06-29\t0\t50284\t38363\t895\t1\t0\t7040\t96583
-        2022-06-30\t0\t49355\t62530\t784\t0\t0\t18934\t131603
+        histogram_date\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
+        2022-06-24\t49585\t62097\t938\t1\t1\t18202\t130824
+        2022-06-25 **\t49559\t60180\t907\t0\t0\t18888\t129534
+        2022-06-26 **\t48276\t59486\t871\t1\t0\t18532\t127166
+        2022-06-27\t49019\t55451\t957\t0\t0\t16913\t122340
+        2022-06-28\t49089\t41220\t931\t0\t0\t7858\t99098
+        2022-06-29\t50284\t38363\t895\t1\t0\t7040\t96583
+        2022-06-30\t49355\t62530\t784\t0\t0\t18934\t131603
         """
     )
 
@@ -423,7 +419,6 @@ def test_supersearch_url():
         product\tcount
         Firefox\t5
         Fenix\t4
-        --\t10
         total\t19
         """
     )
@@ -463,6 +458,54 @@ def test_facet_product():
     result = runner.invoke(
         cli=cmd_supersearchfacet.supersearchfacet,
         args=["--_facets=product", "--format=tab"],
+        env={"COLUMNS": "100"},
+    )
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        product
+        product\tcount
+        Firefox\t5
+        Fenix\t4
+        total\t19
+        """
+    )
+
+
+@freezegun.freeze_time("2022-07-01 12:00:00")
+@responses.activate
+def test_facet_product_with_leftovers():
+    supersearch_data = {
+        "hits": [],
+        "total": 19,
+        "facets": {
+            "product": [
+                {"term": "Firefox", "count": 5},
+                {"term": "Fenix", "count": 4},
+            ]
+        },
+        "errors": [],
+    }
+
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "_facets": "product",
+                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json=supersearch_data,
+    )
+    runner = CliRunner()
+    result = runner.invoke(
+        cli=cmd_supersearchfacet.supersearchfacet,
+        args=["--_facets=product", "--format=tab", "--leftover-count"],
         env={"COLUMNS": "100"},
     )
     assert result.exit_code == 0
@@ -644,14 +687,14 @@ def test_histogram_date_product():
     assert result.output == dedent(
         """\
         product
-        histogram_date\t--\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
-        2022-06-24\t0\t49585\t62097\t938\t1\t1\t18202\t130824
-        2022-06-25\t0\t49559\t60180\t907\t0\t0\t18888\t129534
-        2022-06-26\t0\t48276\t59486\t871\t1\t0\t18532\t127166
-        2022-06-27\t0\t49019\t55451\t957\t0\t0\t16913\t122340
-        2022-06-28\t0\t49089\t41220\t931\t0\t0\t7858\t99098
-        2022-06-29\t0\t50284\t38363\t895\t1\t0\t7040\t96583
-        2022-06-30\t0\t49355\t62530\t784\t0\t0\t18934\t131603
+        histogram_date\tFenix\tFirefox\tFocus\tMozillaVPN\tReferenceBrowser\tThunderbird\ttotal
+        2022-06-24\t49585\t62097\t938\t1\t1\t18202\t130824
+        2022-06-25\t49559\t60180\t907\t0\t0\t18888\t129534
+        2022-06-26\t48276\t59486\t871\t1\t0\t18532\t127166
+        2022-06-27\t49019\t55451\t957\t0\t0\t16913\t122340
+        2022-06-28\t49089\t41220\t931\t0\t0\t7858\t99098
+        2022-06-29\t50284\t38363\t895\t1\t0\t7040\t96583
+        2022-06-30\t49355\t62530\t784\t0\t0\t18934\t131603
         """
     )
 
@@ -702,7 +745,6 @@ def test_table():
             "---------|-------",
             " Firefox | 5     ",
             " Fenix   | 4     ",
-            " --      | 10    ",
             " total   | 19    ",
             "",
         ]
@@ -752,7 +794,6 @@ def test_csv():
         product,count
         Firefox,5
         Fenix,4
-        --,10
         total,19
         """
     )
@@ -802,7 +843,6 @@ def test_markdown():
         ------- | -----
         Firefox | 5
         Fenix | 4
-        -- | 10
         total | 19
         """
     )
@@ -856,10 +896,6 @@ def test_json():
             {
               "product": "Fenix",
               "count": 4
-            },
-            {
-              "product": "--",
-              "count": 10
             },
             {
               "product": "total",
