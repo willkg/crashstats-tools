@@ -78,7 +78,7 @@ def extract_supersearch_params(url):
     return params
 
 
-def convert_cardinality_data(facet_data, facet_name, total):
+def convert_cardinality_data(leftover_count, facet_data, facet_name, total):
     """Convert cardinality result to record data
 
     Data is like::
@@ -97,6 +97,7 @@ def convert_cardinality_data(facet_data, facet_name, total):
             ]
         }
 
+    :arg leftover_count: whether or not to calculate the leftover count
     :arg facet_data: the facet results from the response payload
     :arg facet_name: the facet name
 
@@ -109,9 +110,10 @@ def convert_cardinality_data(facet_data, facet_name, total):
     return {facet_name: [{facet_name: "value", "value": data["value"]}]}
 
 
-def convert_histogram_data(facet_data, facet_name, total):
+def convert_histogram_data(leftover_count, facet_data, facet_name, total):
     """Converts histogram facet data into records
 
+    :arg leftover_count: whether or not to calculate the leftover count
     :arg facet_data: the facet results from the response payload
     :arg facet_name: the facet name
 
@@ -131,7 +133,8 @@ def convert_histogram_data(facet_data, facet_name, total):
         records = {}
         for field_name, field_data in row["facets"].items():
             records = {item["term"]: item["count"] for item in field_data}
-            records["--"] = total - sum(records.values())
+            if leftover_count:
+                records["--"] = total - sum(records.values())
             records["total"] = total
             facet_tables.setdefault(field_name, {})[row_term] = records
 
@@ -164,11 +167,12 @@ def convert_histogram_data(facet_data, facet_name, total):
     return result
 
 
-def convert_facet_data(facet_data, facet_name, total):
+def convert_facet_data(leftover_count, facet_data, facet_name, total):
     """Convert facet data to records that can be printed
 
     This doesn't yet support nested aggregations.
 
+    :arg leftover_count: whether or not to calculate the leftover count
     :arg facet_data: the facet results from the response payload
     :arg facet_name: the facet name
 
@@ -184,7 +188,8 @@ def convert_facet_data(facet_data, facet_name, total):
             {facet_name: sanitize_text(item["term"]), "count": item["count"]}
         )
         count_sum += item["count"]
-    records.append({facet_name: "--", "count": total - count_sum})
+    if leftover_count:
+        records.append({facet_name: "--", "count": total - count_sum})
     records.append({facet_name: "total", "count": total})
 
     return {facet_name: records}
@@ -254,7 +259,7 @@ def fix_value(value, denote_weekends):
     default=True,
     help=(
         "whether or not to colorize output; note that color is shut off "
-        "when stdout is not an interactive terminal automatically"
+        + "when stdout is not an interactive terminal automatically"
     ),
 )
 @click.option(
@@ -262,6 +267,14 @@ def fix_value(value, denote_weekends):
     default=False,
     help=(
         "This will add a * for values that are datestamps and on a Saturday or Sunday."
+    ),
+)
+@click.option(
+    "--leftover-count/--no-leftover-count",
+    default=False,
+    help=(
+        "Calculates the leftover that is the difference between the total "
+        + "minus the sum of all term counts"
     ),
 )
 @click.pass_context
@@ -276,6 +289,7 @@ def supersearchfacet(
     verbose,
     color,
     denote_weekends,
+    leftover_count,
 ):
     """Fetches facet data from Crash Stats using Super Search
 
@@ -418,13 +432,28 @@ def supersearchfacet(
 
     for facet_name in facets.keys():
         if facet_name.startswith("cardinality"):
-            facet_tables = convert_cardinality_data(facets, facet_name, total)
+            facet_tables = convert_cardinality_data(
+                leftover_count=leftover_count,
+                facet_data=facets,
+                facet_name=facet_name,
+                total=total,
+            )
 
         elif facet_name.startswith("histogram"):
-            facet_tables = convert_histogram_data(facets, facet_name, total)
+            facet_tables = convert_histogram_data(
+                leftover_count=leftover_count,
+                facet_data=facets,
+                facet_name=facet_name,
+                total=total,
+            )
 
         else:
-            facet_tables = convert_facet_data(facets, facet_name, total)
+            facet_tables = convert_facet_data(
+                leftover_count=leftover_count,
+                facet_data=facets,
+                facet_name=facet_name,
+                total=total,
+            )
 
         if format_type == "json":
             console.print_json(json.dumps(facet_tables))
