@@ -27,6 +27,10 @@ install it with `pipx <https://pipxproject.github.io/pipx/>`_::
 
     $ pipx install crashstats-tools
 
+To install crashstats-tools from a Git repository with dev dependencies::
+
+    $ pip install -e '.[dev]'
+
 
 Support
 =======
@@ -55,18 +59,24 @@ supersearch
     from crashstats_tools.cmd_supersearch import supersearch
     from click.testing import CliRunner
     result = CliRunner().invoke(supersearch, ["--help"])
-    cog.out("::\n\n")
+    cog.out("\n::\n\n")
     for line in result.output.splitlines():
         if line.strip():
             cog.out(f"   {line}\n")
         else:
             cog.out("\n")
     ]]]
+
 ::
 
    Usage: supersearch [OPTIONS]
 
-     Fetches data from Crash Stats using Super Search
+     Performs a basic search on Crash Stats using the Super Search API and outputs
+     the results.
+
+     A basic search uses filters and can span multiple pages of results. A basic
+     search cannot include facets, aggregations, histograms, or cardinalities. For
+     those, use supersearchfacet.
 
      There are two ways to run this:
 
@@ -77,25 +87,23 @@ supersearch
      $ supersearch --product=Firefox --num=100 --date='>=2019-07-31'
 
      Second, you can pass in a url from a Super Search on Crash Stats. This command
-     will then pull out the parameters. You can override those parameters with
-     command line arguments.
+     will then pull out the filter parameters. You can override those parameters
+     with command line arguments.
 
      $ supersearch --supersearch-url='longurlhere' --num=100
 
      Make sure to use single quotes when specifying values so that your shell
-     doesn't expand variables.
+     doesn't expand variables or parse escape sequences.
 
-     Returned fields are tab-delimited. You can specify them using the Super Search
-     field "_columns".
+     You can specify returned fields using the Super Search field "_columns".
 
      For example:
 
      $ supersearch --_columns=uuid --_columns=product --_columns=build_id
      --_columns=version
 
-     Results are tab-delimited. Tabs and newlines in output is escaped.
-
-     This doesn't support any of the aggregations at this time.
+     Results are tab-delimited by default. You can specify other output formats
+     using "--format". Tabs and newlines in output are escaped.
 
      For list of available fields and Super Search API documentation, see:
 
@@ -126,12 +134,14 @@ supersearch
                                      of them  [default: 100]
      --headers / --no-headers        whether or not to show table headers
                                      [default: no-headers]
-     --format [table|tab|json|markdown]
+     --format [table|tab|csv|json|markdown]
                                      format to print output  [default: tab]
-     --verbose / --no-verbose        whether to print debugging output
+     --verbose / --no-verbose        whether to print debugging output  [default:
+                                     no-verbose]
      --color / --no-color            whether or not to colorize output; note that
                                      color is shut off when stdout is not an
-                                     interactive terminal automatically
+                                     interactive terminal automatically  [default:
+                                     color]
      --help                          Show this message and exit.
 .. [[[end]]]
 
@@ -183,13 +193,14 @@ supersearchfacet
     from crashstats_tools.cmd_supersearchfacet import supersearchfacet
     from click.testing import CliRunner
     result = CliRunner().invoke(supersearchfacet, ["--help"])
-    cog.out("::\n\n")
+    cog.out("\n::\n\n")
     for line in result.output.splitlines():
         if line.strip():
             cog.out(f"   {line}\n")
         else:
             cog.out("\n")
     ]]]
+
 ::
 
    Usage: supersearchfacet [OPTIONS]
@@ -216,17 +227,19 @@ supersearchfacet
      You can only specify one facet using "--_facets". If you don't specify one, it
      defaults to "signature".
 
-     By default, returned data is a tab-delimited table. Tabs and newlines in
-     output is escaped. Use "--format" to specify a different output format.
+     You can perform histograms, too. For example, this shows you counts for
+     products per day for the last week:
+
+     $ supersearchfacet --_histogram.date=product --relative-range=1w
+
+     By default, returned data is a tab-delimited. Tabs and newlines in output is
+     escaped. Use "--format" to specify a different output format.
 
      For list of available fields and Super Search API documentation, see:
 
      https://crash-stats.mozilla.org/documentation/supersearch/
 
      https://crash-stats.mozilla.org/documentation/supersearch/api/
-
-     This generates a table values and counts. If you want values and counts over a
-     series of days, use "--period=daily".
 
      This requires an API token in order to search and get results for protected
      data. Using an API token also reduces rate-limiting. Set the
@@ -245,20 +258,29 @@ supersearchfacet
 
    Options:
      --host TEXT                     host for system to fetch facets from
+                                     [default: https://crash-stats.mozilla.org]
      --supersearch-url TEXT          Super Search url to base query on
      --start-date TEXT               start date for range; YYYY-MM-DD format
-     --end-date TEXT                 end date for range; YYYY-MM-DD format;
-                                     defaults to today
-     --relative-range TEXT           relative range ending on end-date
-     --period [none|daily|hourly|weekly]
-                                     period to facet on to get count/period
-                                     [default: none]
-     --format [table|tab|markdown|json]
+     --end-date TEXT                 end date for range; YYYY-MM-DD format
+                                     [default: today]
+     --relative-range TEXT           relative range ending on end-date  [default:
+                                     7d]
+     --format [table|tab|csv|markdown|json|raw]
                                      format to print output  [default: table]
-     --verbose / --no-verbose        whether to print debugging output
+     --verbose / --no-verbose        whether to print debugging output  [default:
+                                     no-verbose]
      --color / --no-color            whether or not to colorize output; note that
                                      color is shut off when stdout is not an
-                                     interactive terminal automatically
+                                     interactive terminal automatically  [default:
+                                     color]
+     --denote-weekends / --no-denote-weekends
+                                     This will add a * for values that are
+                                     datestamps and on a Saturday or Sunday.
+                                     [default: no-denote-weekends]
+     --leftover-count / --no-leftover-count
+                                     Calculates the leftover that is the difference
+                                     between the total minus the sum of all term
+                                     counts  [default: no-leftover-count]
      --help                          Show this message and exit.
 .. [[[end]]]
 
@@ -295,16 +317,17 @@ fetch-data
     from crashstats_tools.cmd_fetch_data import fetch_data
     from click.testing import CliRunner
     result = CliRunner().invoke(fetch_data, ["--help"])
-    cog.out("::\n\n")
+    cog.out("\n::\n\n")
     for line in result.output.splitlines():
         if line.strip():
             cog.out(f"   {line}\n")
         else:
             cog.out("\n")
     ]]]
+
 ::
 
-   Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASHIDS]...
+   Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
 
      Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
 
@@ -333,14 +356,23 @@ fetch-data
 
    Options:
      --host TEXT                   host to pull crash data from; this needs to
-                                   match CRASHSTATS_API_TOKEN value
+                                   match CRASHSTATS_API_TOKEN value  [default:
+                                   https://crash-stats.mozilla.org]
      --overwrite / --no-overwrite  whether or not to overwrite existing data
-     --raw / --no-raw              whether or not to save raw crash data
-     --dumps / --no-dumps          whether or not to save dumps
+                                   [default: overwrite]
+     --raw / --no-raw              whether or not to save raw crash data  [default:
+                                   raw]
+     --dumps / --no-dumps          whether or not to save dumps  [default: no-
+                                   dumps]
      --processed / --no-processed  whether or not to save processed crash data
+                                   [default: no-processed]
+     --workers INTEGER RANGE       how many workers to use to download data;
+                                   requires CRASHSTATS_API_TOKEN  [default: 1;
+                                   1<=x<=10]
      --color / --no-color          whether or not to colorize output; note that
                                    color is shut off when stdout is not an
-                                   interactive terminal automatically
+                                   interactive terminal automatically  [default:
+                                   color]
      --help                        Show this message and exit.
 .. [[[end]]]
 
@@ -363,13 +395,14 @@ reprocess
     from crashstats_tools.cmd_reprocess import reprocess
     from click.testing import CliRunner
     result = CliRunner().invoke(reprocess, ["--help"])
-    cog.out("::\n\n")
+    cog.out("\n::\n\n")
     for line in result.output.splitlines():
         if line.strip():
             cog.out(f"   {line}\n")
         else:
             cog.out("\n")
     ]]]
+
 ::
 
    Usage: reprocess [OPTIONS] [CRASHIDS]...
@@ -400,9 +433,11 @@ reprocess
                                      reprocessing these crash ids
      --allow-many / --no-allow-many  don't prompt user about letting us know about
                                      reprocessing more than 10,000 crashes
+                                     [default: no-allow-many]
      --color / --no-color            whether or not to colorize output; note that
                                      color is shut off when stdout is not an
-                                     interactive terminal automatically
+                                     interactive terminal automatically  [default:
+                                     color]
      --help                          Show this message and exit.
 .. [[[end]]]
 

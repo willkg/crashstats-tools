@@ -1,3 +1,65 @@
+[project]
+name = "crashstats-tools"
+description = "Tools for working with Crash Stats (https://crash-stats.mozilla.org/)"
+version = "1.4.0"
+readme = "README.rst"
+keywords = ["socorro"]
+authors = [{name = "Will Kahn-Greene"}]
+license = {text = "MPLv2"}
+requires-python = ">=3.8"
+dependencies = [
+    "click",
+    "more_itertools",
+    "requests",
+    "rich",
+    "tomli>=1.1.0; python_version < '3.11'",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+urls.Homepage = "https://github.com/willkg/crashstats-tools"
+urls.Source = "https://github.com/willkg/crashstats-tools"
+urls.Issues = "https://github.com/willkg/crashstats-tools"
+
+[project.scripts]
+fetch-data = "crashstats_tools.cmd_fetch_data:fetch_data"
+reprocess = "crashstats_tools.cmd_reprocess:reprocess"
+supersearch = "crashstats_tools.cmd_supersearch:supersearch"
+supersearchfacet = "crashstats_tools.cmd_supersearchfacet:supersearchfacet"
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "check-manifest",
+    "cogapp",
+    "freezegun",
+    "pytest",
+    "responses",
+    "ruff",
+    "setuptools",
+    "tox",
+    "tox-gh-actions",
+    "twine",
+    "wheel",
+]
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
 [tool.ruff]
 # Enable pycodestyle (E), pyflakes (F), and bugbear (B) rules
 select = ["E", "F", "B"]
@@ -17,6 +79,7 @@ docstring-quotes = "double"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
+isolated_build = True
 envlist =
     py38
     py38-lint
@@ -34,14 +97,13 @@ python =
     3.12: py312
 
 [testenv]
-deps = -rrequirements-dev.txt
-commands = 
-    pytest {posargs}
+extras = dev
+commands = pytest {posargs}
 
 [testenv:py38-lint]
 basepython = python3.8
 changedir = {toxinidir}
 commands =
-    ruff format --check setup.py src tests
-    ruff check setup.py src tests
+    ruff format --check src tests
+    ruff check src tests
 """

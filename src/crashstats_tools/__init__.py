@@ -3,8 +3,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-# yyyymmdd
-__releasedate__ = "20221118"
+from importlib.metadata import (
+    version as importlib_version,
+    PackageNotFoundError,
+)
 
-# x.y.z or x.y.z.dev0 -- semver
-__version__ = "1.4.0"
+try:
+    __version__ = importlib_version("crashstats-tools")
+except PackageNotFoundError:
+    __version__ = "unknown"
