@@ -14,11 +14,6 @@ src = ["src"]
 docstring-quotes = "double"
 
 
-[tool.black]
-line-length = 88
-target-version = ["py38"]
-
-
 [tool.tox]
 legacy_tox_ini = """
 [tox]
@@ -47,6 +42,6 @@ commands =
 basepython = python3.8
 changedir = {toxinidir}
 commands =
-    black --check setup.py src tests
-    ruff setup.py src tests
+    ruff format --check setup.py src tests
+    ruff check setup.py src tests
 """
