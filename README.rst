@@ -17,17 +17,14 @@ Command line tools and library for interacting with Crash Stats
 Installing
 ==========
 
-crashstats-tools is available on `PyPI <https://pypi.org>`_. You can install
-it with::
-
-    $ pip install --user crashstats-tools
-
-Since it has commands that you want to use, you probably want to
-install it with `pipx <https://pipxproject.github.io/pipx/>`_::
+crashstats-tools is available on `PyPI <https://pypi.org>`_. You can install it
+with `pipx <https://pipxproject.github.io/pipx/>`_::
 
     $ pipx install crashstats-tools
 
-To install crashstats-tools from a Git repository with dev dependencies::
+
+For developing crashstats-tools, clone the Git repository, create a virtual
+environment, and install crashstats-tools and dev dependencies with::
 
     $ pip install -e '.[dev]'
 
