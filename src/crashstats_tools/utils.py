@@ -15,6 +15,8 @@ from urllib.parse import urlparse
 import requests
 from requests.adapters import HTTPAdapter, Retry
 
+from crashstats_tools import __version__
+
 
 DEFAULT_HOST = "https://crash-stats.mozilla.org"
 
@@ -117,7 +119,7 @@ def session_with_retries(
     session = requests.Session()
 
     # Set the User-Agent header so we can distinguish our stuff from other stuff
-    session.headers.update({"User-Agent": "crashstats-tools/1.0"})
+    session.headers.update({"User-Agent": f"crashstats-tools/{__version__}"})
 
     adapter = HTTPAdapterWithTimeout(
         max_retries=retries, default_timeout=default_timeout
