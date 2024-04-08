@@ -161,22 +161,23 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     For example:
 
-    $ supersearch --product=Firefox --num=100 --date='>=2019-07-31'
+    $ supersearch --product=Firefox --num=10
 
     Second, you can pass in a url from a Super Search on Crash Stats. This
     command will then pull out the filter parameters. You can override those
     parameters with command line arguments.
 
-    $ supersearch --supersearch-url='longurlhere' --num=100
+    $ supersearch --supersearch-url='https://crash-stats.mozilla.org/search/...'
 
-    Make sure to use single quotes when specifying values so that your shell doesn't
-    expand variables or parse escape sequences.
+    Make sure to use single quotes when specifying values so that your shell
+    doesn't expand variables or parse escape sequences.
 
     You can specify returned fields using the Super Search field "_columns".
 
     For example:
 
-    $ supersearch --_columns=uuid --_columns=product --_columns=build_id --_columns=version
+    \b
+    $ supersearch --_columns=uuid --_columns=product --_columns=build_id
 
     Results are tab-delimited by default. You can specify other output formats
     using "--format". Tabs and newlines in output are escaped.
@@ -188,7 +189,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     https://crash-stats.mozilla.org/documentation/supersearch/api/
 
     This requires an API token in order to search and get results for protected
-    data. Using an API token also reduces rate-limiting. Set the
+    data fields. Using an API token also reduces rate-limiting. Set the
     CRASHSTATS_API_TOKEN environment variable to your API token value:
 
     CRASHSTATS_API_TOKEN=xyz supersearch ...
@@ -201,6 +202,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     The policy is specified here:
 
     https://crash-stats.mozilla.org/documentation/protected_data_access/
+
     """
     host = host.rstrip("/")
 
