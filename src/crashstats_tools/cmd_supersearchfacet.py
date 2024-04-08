@@ -142,7 +142,7 @@ def flatten_facets(facet_data):
         if key.startswith("cardinality"):
             # term_counts here is something like: {"value": 6}
             #
-            # convert to [{"term": "value", "count": "6"}]
+            # convert to [{key: "value", "value": 6}]
             flattened_facet_data[key] = [{key: "value", "value": term_counts["value"]}]
 
         elif key.startswith("histogram"):
@@ -317,25 +317,56 @@ def supersearchfacet(
 
     $ supersearchfacet --product=Firefox --_facets=version
 
-    Second, you can pass in a url from a Super Search on Crash Stats. This command
-    will then pull out the parameters. You can override those parameters with
-    command line arguments.
+    Second, you can pass in a url from a Super Search on Crash Stats. This
+    command will then pull out the parameters. You can override those
+    parameters with command line arguments.
 
-    $ supersearchfacet --supersearch-url='longurlhere' --_facets=version
+    \b
+    $ supersearchfacet --_facets=version \\
+        --supersearch-url='https://crash-stats.mozilla.org/search/...'
 
-    Make sure to use single quotes when specifying values so that your shell doesn't
-    expand variables.
+    Make sure to use single quotes when specifying values so that your shell
+    doesn't expand variables.
 
-    You can only specify one facet using "--_facets". If you don't specify one,
-    it defaults to "signature".
+    You can get a facet of a field using ``_facets``.
 
-    You can perform histograms, too. For example, this shows you counts for products
+    For example, this filters on Firefox and returns a facet on version
+    for the last 7 days (the default time range).
+
+    $ supersearchfacet --product=Firefox --_facets=version
+
+    You can get cardinality (number of possible values), too. For example, this
+    shows the number of different versions for Firefox crash reports in the
+    last 7 days.
+
+    $ supersearchfacet --product=Firefox --_facets=_cardinality.version
+
+    You can perform histograms. For example, this shows you counts for products
     per day for the last week:
 
     $ supersearchfacet --_histogram.date=product --relative-range=1w
 
-    By default, returned data is a tab-delimited. Tabs and newlines in output
-    is escaped. Use "--format" to specify a different output format.
+    You can get a cardinality for the data for a field. For example,
+    this tells you how many build ids there were for Firefox 124:
+
+    $ supersearchfacet --product=Firefox --version=124.0 \
+        --_facets=_cardinality.build_id
+
+    You can do nested aggregations. For example, this shows the count
+    of crash reports by product by release channel:
+
+    $ supersearchfacet --_aggs.product=release_channel
+
+    This shows count of crash reports by product, version, cardinality of
+    install_time:
+
+    $ supersearchfacet --_aggs.product.version=_cardinality.install_time
+
+    Make sure to specify at least one of ``_facets``, ``_aggs``,
+    ``_histogram``, or ``_cardinality``.
+
+    By default, returned data is in a table. Tabs and newlines in output is
+    escaped. Use ``--format`` to specify a different output format.
 
     For list of available fields and Super Search API documentation, see:
 
@@ -344,7 +375,7 @@ def supersearchfacet(
     https://crash-stats.mozilla.org/documentation/supersearch/api/
 
     This requires an API token in order to search and get results for protected
-    data. Using an API token also reduces rate-limiting. Set the
+    data fields. Using an API token also reduces rate-limiting. Set the
     CRASHSTATS_API_TOKEN environment variable to your API token value:
 
     CRASHSTATS_API_TOKEN=xyz supersearchfacet ...
@@ -357,6 +388,7 @@ def supersearchfacet(
     The policy is specified here:
 
     https://crash-stats.mozilla.org/documentation/protected_data_access/
+
     """
     host = host.rstrip("/")
 
