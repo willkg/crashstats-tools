@@ -91,13 +91,13 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if not api_token:
         error_console.print(
-            "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+            "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
             + "environment.[/yellow]"
         )
         ctx.exit(1)
 
     masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
-    console.print(f"Using api token: {masked_token}")
+    console.print(f"Using API token: {masked_token}")
 
     url = host.rstrip("/") + "/api/Reprocessing/"
     console.print(f"[bold green]Sending reprocessing requests to: {url}[/bold green]")

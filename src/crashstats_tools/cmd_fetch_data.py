@@ -238,10 +238,10 @@ def fetch_data(
     api_token = os.environ.get("CRASHSTATS_API_TOKEN")
     if api_token:
         masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
-        console.print(f"Using api token: {masked_token}")
+        console.print(f"Using API token: {masked_token}")
     else:
         console.print(
-            "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+            "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
             + "environment.[/yellow]"
         )
         console.print(
