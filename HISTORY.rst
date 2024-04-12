@@ -2,6 +2,26 @@
 History
 =======
 
+2.0.0 (April 12th, 2024)
+========================
+
+Changes:
+
+* Radically improve README documentation.
+* Add estimates to reprocess command. (#80)
+* Add support for "csv" format for supersearch and supersearchfacet. (#88)
+* Drop support for Python 3.7. (#90)
+* Add support for Python 3.12. (#91)
+* Add "raw" format for better debugging.
+* Add ``_histogram`` support. (#98)
+* Add ``--denote-weekends`` to supersearchfacet. (#54)
+* Implement parallelization for fetch-data. (#106)
+* Implement ``--leftover-count`` and ``--no-leftover-count`` for supersearchfacet. (#109)
+* Fix user-agent to reflect crashstats-tools version. (#121)
+* Add support for nested aggs and cardinality. (#102, #103)
+* Move functions for Crash Stats API to libcrashstats library. (#67)
+
+
 1.4.0 (November 18th, 2022)
 ===========================
 
