@@ -426,10 +426,10 @@ def supersearchfacet(
     if verbose:
         if api_token:
             masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
-            console.print(f"Using api token: {masked_token}")
+            console.print(f"Using API token: {masked_token}")
         else:
             console.print(
-                "[yellow]No api token provided. Set CRASHSTATS_API_TOKEN in the "
+                "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
                 + "environment.[/yellow]"
             )
             console.print(
@@ -510,7 +510,15 @@ def supersearchfacet(
     if first_thing:
         # This is weird--it means we didn't print any tables, so something is
         # wrong.
-        console_err.print("No output.")
+        console_err.print("No output--something went wrong.")
+        console_err.print(f"Host: {host}")
+        if api_token:
+            masked_token = api_token[:4] + ("x" * (len(api_token) - 4))
+            console_err.print(f"Using API token: {masked_token}")
+        else:
+            console_err.print("Not using API token.")
+        console_err.print(f"Params sent: {params}")
+        console_err.print(f"Output returned: {facet_data_payload}")
         ctx.exit(1)
 
 

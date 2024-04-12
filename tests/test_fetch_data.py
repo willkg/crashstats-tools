@@ -58,7 +58,7 @@ def test_fetch_raw(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
@@ -108,7 +108,7 @@ def test_fetch_raw_with_token(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )
@@ -132,7 +132,7 @@ def test_fetch_dumps_no_token(tmpdir):
     assert result.exit_code == 2
     assert result.output == dedent(
         """\
-        No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
         Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
         Try 'fetch-data --help' for help.
@@ -233,7 +233,7 @@ def test_fetch_dumps(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching dump: upload_file_minidump
         """
@@ -280,7 +280,7 @@ def test_fetch_processed(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
         """
@@ -327,7 +327,7 @@ def test_fetch_processed_with_token(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
         """
     )
@@ -376,7 +376,7 @@ def test_host(tmpdir):
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and personally identifiable information.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """

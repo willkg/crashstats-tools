@@ -38,7 +38,7 @@ def test_no_token():
     assert result.exit_code == 1
     assert result.output == dedent(
         """\
-        No api token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         """
     )
 
@@ -72,7 +72,7 @@ def test_reprocess_from_args():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
         Rough estimate: 0:00:00
@@ -112,7 +112,7 @@ def test_reprocess_from_stdin():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
         Rough estimate: 0:00:00
@@ -153,7 +153,7 @@ def test_reprocess_with_ruleset():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
         Rough estimate: 0:00:00
@@ -193,7 +193,7 @@ def test_reprocess_host():
     assert result.exit_code == 0
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: http://example.com/api/Reprocessing/
         Reprocessing 1 crashes sleeping 1 seconds between groups...
         Rough estimate: 0:00:00
@@ -232,7 +232,7 @@ def test_reprocess_tenthousand():
     assert result.exit_code == 1
     assert result.output == dedent(
         """\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 10,010 crashes sleeping 1 seconds between groups...
         Rough estimate: 0:05:00
@@ -275,7 +275,7 @@ def test_reprocess_tenthousand_allowmany():
     assert result.output.startswith(
         dedent(
             f"""\
-        Using api token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         Sending reprocessing requests to: https://crash-stats.mozilla.org/api/Reprocessing/
         Reprocessing 10,010 crashes sleeping 0 seconds between groups...
         Rough estimate: 0:01:40
