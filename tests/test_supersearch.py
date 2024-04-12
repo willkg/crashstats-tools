@@ -15,7 +15,7 @@ from crashstats_tools.utils import DEFAULT_HOST
 def test_it_runs():
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch, args=["--help"], env={"COLUMNS": "100"}
+        cli=cmd_supersearch.supersearch_cli, args=["--help"], env={"COLUMNS": "100"}
     )
     assert result.exit_code == 0
 
@@ -52,7 +52,7 @@ def test_no_args():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         env={"COLUMNS": "100"},
     )
     assert result.exit_code == 0
@@ -102,7 +102,7 @@ def test_columns():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=["--_columns=uuid", "--_columns=signature"],
         env={"COLUMNS": "100"},
     )
@@ -148,7 +148,7 @@ def test_host():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=["--host=http://example.com"],
         env={"COLUMNS": "100"},
     )
@@ -195,7 +195,7 @@ def test_token():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         env={"CRASHSTATS_API_TOKEN": api_token, "COLUMNS": "100"},
     )
     assert result.exit_code == 0
@@ -245,7 +245,7 @@ def test_json():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=["--_columns=uuid", "--_columns=signature", "--format=json"],
         env={"COLUMNS": "100"},
     )
@@ -299,7 +299,7 @@ def test_num():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=["--num=2"],
         env={"COLUMNS": "100"},
     )
@@ -350,7 +350,7 @@ def test_headers():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=["--headers", "--_columns=uuid", "--_columns=signature"],
         env={"COLUMNS": "100"},
     )
@@ -402,7 +402,7 @@ def test_supersearch_url():
 
     runner = CliRunner()
     result = runner.invoke(
-        cli=cmd_supersearch.supersearch,
+        cli=cmd_supersearch.supersearch_cli,
         args=[
             "--supersearch-url=https://crash-stats.mozilla.org"
             + "/api/SuperSearch/?"

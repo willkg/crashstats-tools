@@ -42,6 +42,37 @@ def dbg(*args):
     console.print(f"dbg: [yellow]{fn}:{lineno}[/yellow] {str_args}")
 
 
+class ConsoleLogger:
+    """Logs to a click console."""
+
+    def __init__(self, console):
+        self.console = console
+
+    def log(self, level, msg, *args, **kwargs):
+        # NOTE(willkg): kwargs are currently ignored
+        self.console.print(msg % args)
+
+    def debug(self, msg, *args, **kwargs):
+        self.log(10, msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        self.log(20, msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self.log(30, msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        self.log(40, msg, *args, **kwargs)
+
+    def exception(self, msg, *args, **kwargs):
+        # NOTE(willkg): exception doesn't add exception information--currently,
+        # it's just an alias for error
+        self.log(40, msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.log(50, msg, *args, **kwargs)
+
+
 def escape_whitespace(text):
     """Escapes whitespace characters."""
     text = text or ""

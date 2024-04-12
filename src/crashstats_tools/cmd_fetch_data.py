@@ -11,9 +11,13 @@ import sys
 import click
 from rich.console import Console
 
+from crashstats_tools.libcrashstats import (
+    get_crash_annotations,
+    get_dump,
+    get_processed_crash,
+)
 from crashstats_tools.utils import (
     DEFAULT_HOST,
-    http_get,
     JsonDTEncoder,
     parse_crash_id,
 )
@@ -58,14 +62,9 @@ def fetch_crash(
             console.print(f"{crash_id}: fetching raw crash -- already exists")
         else:
             console.print(f"{crash_id}: fetching raw crash")
-            resp = http_get(
-                url=host + "/api/RawCrash/",
-                params={"crash_id": crash_id, "format": "meta"},
-                api_token=api_token,
-            )
+            raw_crash = get_crash_annotations(crash_id, host=host, api_token=api_token)
 
             # Save raw crash to file system
-            raw_crash = resp.json()
             create_dir_if_needed(os.path.dirname(fn))
             with open(fn, "w") as fp:
                 json.dump(raw_crash, fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
@@ -93,25 +92,12 @@ def fetch_crash(
                     )
                 else:
                     console.print(f"{crash_id}: fetching dump: {dump_name}")
-                    resp = http_get(
-                        url=host + "/api/RawCrash/",
-                        params={
-                            "crash_id": crash_id,
-                            "format": "raw",
-                            "name": file_name,
-                        },
-                        api_token=api_token,
+                    dump_content = get_dump(
+                        crash_id, dump_name=file_name, api_token=api_token, host=host
                     )
-
-                    if resp.status_code != 200:
-                        raise Exception(
-                            f"{crash_id}: something unexpected happened; status_code {resp.status_code}, "
-                            + f"content {resp.content}"
-                        )
-
                     create_dir_if_needed(os.path.dirname(fn))
                     with open(fn, "wb") as fp:
-                        fp.write(resp.content)
+                        fp.write(dump_content)
 
     if fetchprocessed:
         # Fetch processed crash data
@@ -120,16 +106,16 @@ def fetch_crash(
             console.print(f"{crash_id}: fetching processed crash -- already exists")
         else:
             console.print(f"{crash_id}: fetching processed crash")
-            resp = http_get(
-                host + "/api/ProcessedCrash/",
-                params={"crash_id": crash_id, "format": "meta"},
-                api_token=api_token,
+            processed_crash = get_processed_crash(
+                crash_id, api_token=api_token, host=host
             )
 
             # Save processed crash to file system
             create_dir_if_needed(os.path.dirname(fn))
             with open(fn, "w") as fp:
-                json.dump(resp.json(), fp, cls=JsonDTEncoder, indent=2, sort_keys=True)
+                json.dump(
+                    processed_crash, fp, cls=JsonDTEncoder, indent=2, sort_keys=True
+                )
 
 
 @click.command(context_settings={"show_default": True})
@@ -244,10 +230,7 @@ def fetch_data(
             "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
             + "environment.[/yellow]"
         )
-        console.print(
-            "[yellow]Skipping dumps and personally identifiable "
-            + "information.[/yellow]"
-        )
+        console.print("[yellow]Skipping dumps and protected data.[/yellow]")
 
     if workers > 1:
         if not api_token:
