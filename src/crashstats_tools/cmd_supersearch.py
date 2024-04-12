@@ -11,10 +11,11 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from crashstats_tools.libcrashstats import supersearch
 from crashstats_tools.utils import (
-    escape_whitespace,
+    ConsoleLogger,
     DEFAULT_HOST,
-    http_get,
+    escape_whitespace,
     INFINITY,
     MissingField,
     parse_args,
@@ -22,65 +23,6 @@ from crashstats_tools.utils import (
     tableize_markdown,
     tableize_tab,
 )
-
-
-MAX_PAGE = 1000
-
-
-def fetch_supersearch(
-    console, host, params, num_results, api_token=None, verbose=False
-):
-    """Generator that returns Super Search results
-
-    :arg str host: the host to query
-    :arg dict params: dict of super search parameters to base the query on
-    :arg varies num: number of results to get or INFINITY
-    :arg str api_token: the API token to use or None
-    :arg bool verbose: whether or not to print verbose things
-
-    :returns: generator of crash ids
-
-    """
-    url = host + "/api/SuperSearch/"
-
-    # Set up first page
-    params["_results_offset"] = 0
-    params["_results_number"] = min(MAX_PAGE, num_results)
-
-    # Fetch pages of crash ids until we've gotten as many as we want or there
-    # aren't any more to get
-    crashids_count = 0
-    while True:
-        if verbose:
-            console.print(url, params)
-
-        resp = http_get(url=url, params=params, api_token=api_token)
-        hits = resp.json()["hits"]
-
-        for hit in hits:
-            crashids_count += 1
-            yield hit
-
-            # If we've gotten as many crashids as we need, we return
-            if crashids_count >= num_results:
-                return
-
-        # If there are no more crash ids to get, we return
-        total = resp.json()["total"]
-        if not hits or crashids_count >= total:
-            return
-
-        # Get the next page, but only as many results as we need
-        params["_results_offset"] += MAX_PAGE
-        params["_results_number"] = min(
-            # MAX_PAGE is the maximum we can request
-            MAX_PAGE,
-            # The number of results Super Search can return to us that is
-            # hasn't returned so far
-            total - crashids_count,
-            # The numver of results we want that we haven't gotten, yet
-            num_results - crashids_count,
-        )
 
 
 def extract_supersearch_params(url):
@@ -98,11 +40,12 @@ def extract_supersearch_params(url):
 
 
 @click.command(
+    name="supersearch",
     context_settings={
         "show_default": True,
         "allow_extra_args": True,
         "ignore_unknown_options": True,
-    }
+    },
 )
 @click.option(
     "--host",
@@ -146,7 +89,9 @@ def extract_supersearch_params(url):
     ),
 )
 @click.pass_context
-def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, color):
+def supersearch_cli(
+    ctx, host, supersearch_url, num, headers, format_type, verbose, color
+):
     """
     Performs a basic search on Crash Stats using the Super Search API and
     outputs the results.
@@ -260,18 +205,14 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
                 "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
                 + "environment.[/yellow]"
             )
-            console.print(
-                "[yellow]Skipping dumps and personally identifiable "
-                + "information.[/yellow]"
-            )
+            console.print("[yellow]Skipping dumps and protected data.[/yellow]")
 
-    hits = fetch_supersearch(
-        console=console,
-        host=host,
+    hits_generator = supersearch(
         params=params,
         num_results=num_results,
+        host=host,
         api_token=api_token,
-        verbose=verbose,
+        logger=ConsoleLogger(console) if verbose else None,
     )
 
     if format_type == "table":
@@ -279,7 +220,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
         for column in params["_columns"]:
             table.add_column(column, justify="left")
 
-        for hit_i, hit in enumerate(hits):
+        for hit_i, hit in enumerate(hits_generator):
             if hit_i == 0:
                 for field in params["_columns"]:
                     if field not in hit:
@@ -294,7 +235,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     elif format_type == "tab":
         try:
             for line in tableize_tab(
-                params["_columns"], data=hits, show_headers=headers
+                params["_columns"], data=hits_generator, show_headers=headers
             ):
                 # NOTE(willkg): we don't use console.print here because rich will do fancy
                 # things like wrapping and fixing tabs we don't want that
@@ -305,7 +246,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
     elif format_type == "csv":
         try:
             for line in tableize_csv(
-                params["_columns"], data=hits, show_headers=headers
+                params["_columns"], data=hits_generator, show_headers=headers
             ):
                 # NOTE(willkg): we don't use console.print here because rich will do fancy
                 # things like wrapping and fixing tabs we don't want that
@@ -315,7 +256,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     elif format_type == "markdown":
         try:
-            for line in tableize_markdown(params["_columns"], data=hits):
+            for line in tableize_markdown(params["_columns"], data=hits_generator):
                 # NOTE(willkg): we don't use console.print here because rich will do fancy
                 # things like wrapping and fixing tabs we don't want that
                 click.echo(line)
@@ -324,7 +265,7 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
     elif format_type == "json":
         records = []
-        for hit_i, hit in enumerate(hits):
+        for hit_i, hit in enumerate(hits_generator):
             if hit_i == 0:
                 for field in params["_columns"]:
                     if field not in hit:
@@ -340,4 +281,4 @@ def supersearch(ctx, host, supersearch_url, num, headers, format_type, verbose, 
 
 
 if __name__ == "__main__":
-    supersearch()
+    supersearch_cli()

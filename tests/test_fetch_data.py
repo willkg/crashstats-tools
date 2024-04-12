@@ -59,7 +59,7 @@ def test_fetch_raw(tmpdir):
     assert result.output == dedent(
         """\
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
-        Skipping dumps and personally identifiable information.
+        Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )
@@ -133,7 +133,7 @@ def test_fetch_dumps_no_token(tmpdir):
     assert result.output == dedent(
         """\
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
-        Skipping dumps and personally identifiable information.
+        Skipping dumps and protected data.
         Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
         Try 'fetch-data --help' for help.
 
@@ -281,7 +281,7 @@ def test_fetch_processed(tmpdir):
     assert result.output == dedent(
         """\
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
-        Skipping dumps and personally identifiable information.
+        Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
         """
     )
@@ -377,7 +377,7 @@ def test_host(tmpdir):
     assert result.output == dedent(
         """\
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
-        Skipping dumps and personally identifiable information.
+        Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         """
     )

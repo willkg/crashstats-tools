@@ -615,6 +615,38 @@ I would do this::
         --dom_fission_enabled='!__null__' --_facets=product
 
 
+Library
+=======
+
+Further, this provides a library interface to some Crash Stats API endpoints:
+
+``crashstats_tools.libcrashstats``
+
+``get_crash_annotations(crash_id, api_token=None, host=DEFAULT_HOST)``
+    Fetches crash annotations for a given crash report.
+
+    If you don't provide an API token, then it only returns crash annotations
+    that are marked public.
+
+``get_dump(crash_id, dump_name, api_token, host=DEFAULT_HOST)``
+    Fetches dumps, memory reports, and other crash report binaries for given
+    crash id.
+
+    This requires an api token.
+
+``get_processed_crash(crash_id, api_token=None, host=DEFAULT_HOST)``
+    Fetches the processed crash for given crash id.
+
+``supersearch(params, num_results, host=DEFAULT_HOST, api_token=None, logger=None)``
+    Performs a super search and returns generator of result hits.
+
+    This doesn't return facet, aggregation, cardinality, or histogram data.
+    If you want that, use ``supersearch_facet``.
+
+``supersearch_facet(params, api_token=None, host=DEFAULT_HOST, logger=None)``
+    Performs a super search and returns facet data
+
+
 Prior art and related projects
 ==============================
 

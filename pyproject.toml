@@ -35,7 +35,7 @@ urls.Issues = "https://github.com/willkg/crashstats-tools"
 [project.scripts]
 fetch-data = "crashstats_tools.cmd_fetch_data:fetch_data"
 reprocess = "crashstats_tools.cmd_reprocess:reprocess"
-supersearch = "crashstats_tools.cmd_supersearch:supersearch"
+supersearch = "crashstats_tools.cmd_supersearch:supersearch_cli"
 supersearchfacet = "crashstats_tools.cmd_supersearchfacet:supersearchfacet"
 
 [project.optional-dependencies]

@@ -13,9 +13,10 @@ from rich.console import Console
 from rich.table import Table
 from rich import box
 
+from crashstats_tools.libcrashstats import supersearch_facet
 from crashstats_tools.utils import (
+    ConsoleLogger,
     DEFAULT_HOST,
-    http_get,
     parse_args,
     parse_relative_date,
     sanitize_text,
@@ -24,29 +25,6 @@ from crashstats_tools.utils import (
     tableize_tab,
     thing_to_key,
 )
-
-
-def fetch_supersearch_facets(console, host, params, api_token=None, verbose=False):
-    """Generator that returns Super Search results
-
-    :arg str host: the host to query
-    :arg dict params: dict of super search parameters to base the query on
-    :arg str api_token: the API token to use or None
-    :arg bool verbose: whether or not to print verbose things
-
-    :returns: response payload as a Python dict
-
-    """
-    url = host + "/api/SuperSearch/"
-
-    params["_results_number"] = 0
-
-    if verbose:
-        console.print(f"{url} {params}")
-
-    resp = http_get(url=url, params=params, api_token=api_token)
-    resp.raise_for_status()
-    return resp.json()
 
 
 def extract_supersearch_params(url):
@@ -432,10 +410,7 @@ def supersearchfacet(
                 "[yellow]No API token provided. Set CRASHSTATS_API_TOKEN in the "
                 + "environment.[/yellow]"
             )
-            console.print(
-                "[yellow]Skipping dumps and personally identifiable "
-                + "information.[/yellow]"
-            )
+            console.print("[yellow]Skipping dumps and protected data.[/yellow]")
 
     if "date" not in params and not start_date:
         try:
@@ -453,12 +428,11 @@ def supersearchfacet(
     if verbose:
         console.print(f"Params: {params}")
 
-    facet_data_payload = fetch_supersearch_facets(
-        console=console,
-        host=host,
+    facet_data_payload = supersearch_facet(
         params=params,
         api_token=api_token,
-        verbose=verbose,
+        host=host,
+        logger=ConsoleLogger(console) if verbose else None,
     )
 
     if (
