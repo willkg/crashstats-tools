@@ -1,7 +1,7 @@
 [project]
 name = "crashstats-tools"
 description = "Tools for working with Crash Stats (https://crash-stats.mozilla.org/)"
-version = "1.4.0"
+version = "2.0.0"
 readme = "README.rst"
 keywords = ["socorro"]
 authors = [{name = "Will Kahn-Greene"}]
