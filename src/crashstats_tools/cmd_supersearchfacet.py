@@ -434,7 +434,6 @@ def supersearchfacet(
         host=host,
         logger=ConsoleLogger(console) if verbose else None,
     )
-
     if (
         "signature" not in params["_facets"]
         and "signature" in facet_data_payload["facets"]
@@ -460,6 +459,20 @@ def supersearchfacet(
                 records.append({facet_name: "--", "count": total - record_sum})
 
             records.append({facet_name: "total", "count": total})
+
+        elif facet_name.startswith("histogram"):
+            if leftover_count:
+                for _, rows in records.items():
+                    for row in rows:
+                        count = 0
+                        for key, val in row.items():
+                            if key == facet_name:
+                                continue
+                            elif key == "total":
+                                count -= int(val)
+                            else:
+                                count += int(val)
+                        row["--"] = str(count)
 
     if format_type == "json":
         console.print_json(json.dumps(flattened_facets))
