@@ -46,7 +46,7 @@ def test_host():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -96,7 +96,7 @@ def test_token():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -146,7 +146,7 @@ def test_dates():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=" + start_date, "<" + end_date],
+                    "date": [f">={start_date} 00:00:00", f"<{end_date} 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -199,7 +199,7 @@ def test_relative_date():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-28", "<2022-07-01"],
+                    "date": [">=2022-06-28 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -337,7 +337,7 @@ def test_denote_weekends():
             responses.matchers.query_param_matcher(
                 {
                     "_histogram.date": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -667,7 +667,7 @@ def test_facet_product():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -715,7 +715,7 @@ def test_facet_product_with_leftovers():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -759,7 +759,7 @@ def test_cardinality_product():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "_cardinality.product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -890,7 +890,7 @@ def test_histogram_date_product():
             responses.matchers.query_param_matcher(
                 {
                     "_histogram.date": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -1027,7 +1027,7 @@ def test_histogram_date_product_with_leftover():
             responses.matchers.query_param_matcher(
                 {
                     "_histogram.date": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -1084,7 +1084,7 @@ def test_table():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -1136,7 +1136,7 @@ def test_csv():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -1184,7 +1184,7 @@ def test_markdown():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),
@@ -1233,7 +1233,7 @@ def test_json():
             responses.matchers.query_param_matcher(
                 {
                     "_facets": "product",
-                    "date": [">=2022-06-24", "<2022-07-01"],
+                    "date": [">=2022-06-24 00:00:00", "<2022-07-01 23:59:59"],
                     "_results_number": "0",
                 }
             ),

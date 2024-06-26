@@ -224,13 +224,23 @@ def fix_value(value, denote_weekends=False):
 )
 @click.option("--supersearch-url", default="", help="Super Search url to base query on")
 @click.option(
-    "--start-date", default="", help="start date for range; YYYY-MM-DD format"
+    "--start-date",
+    default="",
+    help=(
+        "start date for range; "
+        + "'YYYY-MM-DD' and 'YYYY-MM-DD HH:MM:SS' formats; "
+        + "defaults to 00:00:00 when no time specified"
+    ),
 )
 @click.option(
     "--end-date",
     default="today",
     show_default=True,
-    help="end date for range; YYYY-MM-DD format",
+    help=(
+        "end date for range; "
+        + "'YYYY-MM-DD' and 'YYYY-MM-DD HH:MM:SS' formats; "
+        + "defaults to 23:59:59 when no time specified"
+    ),
 )
 @click.option(
     "--relative-range", default="7d", help="relative range ending on end-date"
@@ -370,6 +380,9 @@ def supersearchfacet(
     """
     host = host.rstrip("/")
 
+    today = datetime.datetime.now()
+    yesterday = today - datetime.timedelta(days=1)
+
     if not color:
         console = Console(color_system=None, tab_size=None)
         console_err = Console(color_system=None, tab_size=None, stderr=True)
@@ -378,7 +391,9 @@ def supersearchfacet(
         console_err = Console(tab_size=None, stderr=True)
 
     if end_date == "today":
-        end_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        end_date = today.strftime("%Y-%m-%d")
+    elif end_date == "yesterday":
+        end_date = yesterday.strftime("%Y-%m-%d")
 
     # Require at least one facet specified.
     parsed_args = parse_args(ctx.args)
@@ -423,6 +438,10 @@ def supersearchfacet(
         ).strftime("%Y-%m-%d")
 
     if "date" not in params:
+        if len(start_date) == 10:
+            start_date = f"{start_date} 00:00:00"
+        if len(end_date) == 10:
+            end_date = f"{end_date} 23:59:59"
         params.update({"date": [">=%s" % start_date, "<%s" % end_date]})
 
     if verbose:
