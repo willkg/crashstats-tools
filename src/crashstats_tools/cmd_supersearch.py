@@ -11,7 +11,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from crashstats_tools.libcrashstats import supersearch
+from crashstats_tools.libcrashstats import supersearch, supersearch_return_query
 from crashstats_tools.utils import (
     ConsoleLogger,
     DEFAULT_HOST,
@@ -206,6 +206,23 @@ def supersearch_cli(
                 + "environment.[/yellow]"
             )
             console.print("[yellow]Skipping dumps and protected data.[/yellow]")
+
+    if "_return_query" in params:
+        if not api_token:
+            console.print(
+                "[red]No API token provided, so _return_query cannot be used.[/red]"
+            )
+            ctx.exit(1)
+
+        query = supersearch_return_query(
+            params=params,
+            num_results=num_results,
+            host=host,
+            api_token=api_token,
+            logger=ConsoleLogger(console) if verbose else None,
+        )
+        console.print(query)
+        ctx.exit(0)
 
     hits_generator = supersearch(
         params=params,
