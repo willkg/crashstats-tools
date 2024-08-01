@@ -16,6 +16,10 @@ class BadRequest(Exception):
     pass
 
 
+class WrongSupersearchFunction(Exception):
+    pass
+
+
 def get_crash_annotations(crash_id, api_token=None, host=DEFAULT_HOST):
     """Fetches crash annotations from host for given crash_id
 
@@ -102,6 +106,38 @@ def get_processed_crash(crash_id, api_token=None, host=DEFAULT_HOST):
     return resp.json()
 
 
+def supersearch_return_query(
+    params, num_results, host=DEFAULT_HOST, api_token=None, logger=None
+):
+    """Performs search with _return_query parameter and returns elasticsearch query
+
+    :arg dict params: dict of super search parameters to base the query on
+    :arg varies num: number of results to get or INFINITY
+    :arg str host: the host to query
+    :arg str api_token: the API token to use or None
+    :arg varies logger: logger to use for printing what it's doing
+
+    :returns: the Elasticsearch query as a Python dict
+
+    """
+    url = f"{host}/api/SuperSearch/"
+
+    params["_return_query"] = 1
+
+    # Set up first page
+    params["_results_offset"] = 0
+    params["_results_number"] = min(MAX_PAGE, num_results)
+
+    if logger:
+        logger.debug("supersearch: url: %s, params: %r", url, params)
+
+    resp = http_get(url=url, params=params, api_token=api_token)
+    resp.raise_for_status()
+
+    # This is the Elasticsearch query that would have been executed
+    return resp.json()
+
+
 def supersearch(params, num_results, host=DEFAULT_HOST, api_token=None, logger=None):
     """Performs search and returns generator of result hits
 
@@ -125,6 +161,9 @@ def supersearch(params, num_results, host=DEFAULT_HOST, api_token=None, logger=N
     params["_results_offset"] = 0
     params["_results_number"] = min(MAX_PAGE, num_results)
 
+    if "_return_query" in params:
+        raise WrongSupersearchFunction("use supersearch_return_query instead")
+
     # Fetch pages of crash ids until we've gotten as many as we want or there
     # aren't any more to get
     crashids_count = 0
@@ -134,6 +173,7 @@ def supersearch(params, num_results, host=DEFAULT_HOST, api_token=None, logger=N
 
         resp = http_get(url=url, params=params, api_token=api_token)
         resp.raise_for_status()
+
         hits = resp.json()["hits"]
 
         for hit in hits:

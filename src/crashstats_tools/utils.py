@@ -138,7 +138,7 @@ class HTTPAdapterWithTimeout(HTTPAdapter):
 def session_with_retries(
     total_retries=10,
     backoff_factor=0.2,
-    status_forcelist=(429, 500, 502),
+    status_forcelist=(429, 500, 502, 504),
     default_timeout=5.0,
 ):
     """Returns session that retries on HTTP error codes with default timeout

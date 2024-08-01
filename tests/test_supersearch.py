@@ -419,3 +419,122 @@ def test_supersearch_url():
         ae692700-2230-411e-95d0-3feaf0220624\tOOM | large
         """
     )
+
+
+@responses.activate
+def test_return_query():
+    # This makes sure that passing in _retury_query=1 does the right thing by
+    # calling the correct supersearch function.
+    api_token = "935e136cdfe14b83abae0e0cd97b634f"
+    supersearch_query_data = {
+        "query": {
+            "query": {
+                "filtered": {
+                    "query": {"match_all": {}},
+                    "filter": {
+                        "bool": {
+                            "must": [
+                                {
+                                    "bool": {
+                                        "must": [
+                                            {
+                                                "range": {
+                                                    "processed_crash.date_processed": {
+                                                        "gte": "2024-08-06T13:56:15+00:00"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "range": {
+                                                    "processed_crash.date_processed": {
+                                                        "lte": "2024-08-13T13:56:15+00:00"
+                                                    }
+                                                }
+                                            },
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                }
+            },
+            "sort": [{"processed_crash.date_processed": {"order": "desc"}}],
+            "from": 0,
+            "size": 100,
+            "fields": ["processed_crash.uuid"],
+        },
+        "indices": ["socorro202432", "socorro202433"],
+    }
+
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.header_matcher({"Auth-Token": api_token}),
+            responses.matchers.query_param_matcher(
+                {
+                    "_columns": "uuid",
+                    "_sort": "-date",
+                    "_return_query": "1",
+                    "_results_offset": "0",
+                    "_results_number": "100",
+                    "_facets_size": "0",
+                }
+            ),
+        ],
+        status=200,
+        json=supersearch_query_data,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli=cmd_supersearch.supersearch_cli,
+        args=["--_return_query=1"],
+        env={"CRASHSTATS_API_TOKEN": api_token, "COLUMNS": "100"},
+    )
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        {
+            'query': {
+                'query': {
+                    'filtered': {
+                        'query': {'match_all': {}},
+                        'filter': {
+                            'bool': {
+                                'must': [
+                                    {
+                                        'bool': {
+                                            'must': [
+                                                {
+                                                    'range': {
+                                                        'processed_crash.date_processed': {
+                                                            'gte': '2024-08-06T13:56:15+00:00'
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    'range': {
+                                                        'processed_crash.date_processed': {
+                                                            'lte': '2024-08-13T13:56:15+00:00'
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                'sort': [{'processed_crash.date_processed': {'order': 'desc'}}],
+                'from': 0,
+                'size': 100,
+                'fields': ['processed_crash.uuid']
+            },
+            'indices': ['socorro202432', 'socorro202433']
+        }
+    """
+    )
