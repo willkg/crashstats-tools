@@ -285,7 +285,7 @@ class AlwaysFirst:
 
     def __eq__(self, other):
         # Two AlwaysFirst instances are always equal
-        return type(other) == type(self)
+        return type(other) is type(self)
 
     def __lt__(self, other):
         # This is always less than other
@@ -298,7 +298,7 @@ class AlwaysLast:
 
     def __eq__(self, other):
         # Two AlwaysLast instances are always equal
-        return type(other) == type(self)
+        return type(other) is type(self)
 
     def __lt__(self, other):
         # This is always greater than other
