@@ -209,11 +209,21 @@ def http_get(url, params, api_token=None):
 
     # Handle 403 so we can provide the user more context
     if api_token and resp.status_code == 403:
-        raise BadAPIToken(resp.json().get("error", "No error provided"))
+        try:
+            error = resp.json().get("error", "No error provided")
+        except requests.exceptions.JSONDecodeError:
+            error = resp.text or "no response provided"
+
+        raise BadAPIToken(f"HTTP {resp.status_code}: {error}")
 
     # Handle 400 which indicates a problem with the request
     if resp.status_code == 400:
-        raise BadRequest(resp.json().get("error", "No error provided"))
+        try:
+            error = resp.json().get("error", "No error provided")
+        except requests.exceptions.JSONDecodeError:
+            error = resp.text or "no response provided"
+
+        raise BadRequest(f"HTTP {resp.status_code}: {error}")
 
     # Raise an error for any other non-200 response
     resp.raise_for_status()
