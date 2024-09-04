@@ -53,7 +53,7 @@ Tools
     from click.testing import CliRunner
 
     def execute_help(cmd):
-        result = CliRunner().invoke(supersearch, ["--help"])
+        result = CliRunner().invoke(cmd, ["--help"])
         cog.out("\n::\n\n")
         for line in result.output.splitlines():
             if line.strip():
@@ -68,8 +68,8 @@ supersearch
 -----------
 
 .. [[[cog
-    from crashstats_tools.cmd_supersearch import supersearch
-    execute_help(supersearch)
+    from crashstats_tools.cmd_supersearch import supersearch_cli
+    execute_help(supersearch_cli)
    ]]]
 
 ::
@@ -199,14 +199,9 @@ supersearchfacet
 
 ::
 
-   Usage: supersearch [OPTIONS]
+   Usage: supersearchfacet [OPTIONS]
 
-     Performs a basic search on Crash Stats using the Super Search API and outputs
-     the results.
-
-     A basic search uses filters and can span multiple pages of results. A basic
-     search cannot include facets, aggregations, histograms, or cardinalities. For
-     those, use supersearchfacet.
+     Fetches facet data from Crash Stats using Super Search
 
      There are two ways to run this:
 
@@ -214,25 +209,57 @@ supersearchfacet
 
      For example:
 
-     $ supersearch --product=Firefox --num=10
+     $ supersearchfacet --product=Firefox --_facets=version
 
      Second, you can pass in a url from a Super Search on Crash Stats. This command
-     will then pull out the filter parameters. You can override those parameters
-     with command line arguments.
+     will then pull out the parameters. You can override those parameters with
+     command line arguments.
 
-     $ supersearch --supersearch-url='https://crash-stats.mozilla.org/search/...'
+     $ supersearchfacet --_facets=version \
+         --supersearch-url='https://crash-stats.mozilla.org/search/...'
 
      Make sure to use single quotes when specifying values so that your shell
-     doesn't expand variables or parse escape sequences.
+     doesn't expand variables.
 
-     You can specify returned fields using the Super Search field "_columns".
+     You can get a facet of a field using ``_facets``.
 
-     For example:
+     For example, this filters on Firefox and returns a facet on version for the
+     last 7 days (the default time range).
 
-     $ supersearch --_columns=uuid --_columns=product --_columns=build_id
+     $ supersearchfacet --product=Firefox --_facets=version
 
-     Results are tab-delimited by default. You can specify other output formats
-     using "--format". Tabs and newlines in output are escaped.
+     You can get cardinality (number of possible values), too. For example, this
+     shows the number of different versions for Firefox crash reports in the last 7
+     days.
+
+     $ supersearchfacet --product=Firefox --_facets=_cardinality.version
+
+     You can perform histograms. For example, this shows you counts for products
+     per day for the last week:
+
+     $ supersearchfacet --_histogram.date=product --relative-range=1w
+
+     You can get a cardinality for the data for a field. For example, this tells
+     you how many build ids there were for Firefox 124:
+
+     $ supersearchfacet --product=Firefox --version=124.0
+     --_facets=_cardinality.build_id
+
+     You can do nested aggregations. For example, this shows the count of crash
+     reports by product by release channel:
+
+     $ supersearchfacet --_aggs.product=release_channel
+
+     This shows count of crash reports by product, version, cardinality of
+     install_time:
+
+     $ supersearchfacet --_aggs.product.version=_cardinality.install_time
+
+     Make sure to specify at least one of ``_facets``, ``_aggs``, ``_histogram``,
+     or ``_cardinality``.
+
+     By default, returned data is in a table. Tabs and newlines in output is
+     escaped. Use ``--format`` to specify a different output format.
 
      For list of available fields and Super Search API documentation, see:
 
@@ -244,7 +271,7 @@ supersearchfacet
      data fields. Using an API token also reduces rate-limiting. Set the
      CRASHSTATS_API_TOKEN environment variable to your API token value:
 
-     CRASHSTATS_API_TOKEN=xyz supersearch ...
+     CRASHSTATS_API_TOKEN=xyz supersearchfacet ...
 
      To create an API token for Crash Stats, visit:
 
@@ -256,21 +283,33 @@ supersearchfacet
      https://crash-stats.mozilla.org/documentation/protected_data_access/
 
    Options:
-     --host TEXT                     host for system to fetch crashids from
+     --host TEXT                     host for system to fetch facets from
                                      [default: https://crash-stats.mozilla.org]
      --supersearch-url TEXT          Super Search url to base query on
-     --num TEXT                      number of crash ids you want or "all" for all
-                                     of them  [default: 100]
-     --headers / --no-headers        whether or not to show table headers
-                                     [default: no-headers]
-     --format [table|tab|csv|json|markdown]
-                                     format to print output  [default: tab]
+     --start-date TEXT               start date for range; 'YYYY-MM-DD' and 'YYYY-
+                                     MM-DD HH:MM:SS' formats; defaults to 00:00:00
+                                     when no time specified
+     --end-date TEXT                 end date for range; 'YYYY-MM-DD' and 'YYYY-MM-
+                                     DD HH:MM:SS' formats; defaults to 23:59:59
+                                     when no time specified  [default: today]
+     --relative-range TEXT           relative range ending on end-date  [default:
+                                     7d]
+     --format [table|tab|csv|markdown|json|raw]
+                                     format to print output  [default: table]
      --verbose / --no-verbose        whether to print debugging output  [default:
                                      no-verbose]
      --color / --no-color            whether or not to colorize output; note that
                                      color is shut off when stdout is not an
                                      interactive terminal automatically  [default:
                                      color]
+     --denote-weekends / --no-denote-weekends
+                                     This will add a * for values that are
+                                     datestamps and on a Saturday or Sunday.
+                                     [default: no-denote-weekends]
+     --leftover-count / --no-leftover-count
+                                     Calculates the leftover that is the difference
+                                     between the total minus the sum of all term
+                                     counts  [default: no-leftover-count]
      --help                          Show this message and exit.
 
 .. [[[end]]]
@@ -317,52 +356,23 @@ fetch-data
 
 ::
 
-   Usage: supersearch [OPTIONS]
+   Usage: fetch-data [OPTIONS] OUTPUTDIR [CRASH_IDS]...
 
-     Performs a basic search on Crash Stats using the Super Search API and outputs
-     the results.
+     Fetches crash data from Crash Stats (https://crash-stats.mozilla.org/) system.
 
-     A basic search uses filters and can span multiple pages of results. A basic
-     search cannot include facets, aggregations, histograms, or cardinalities. For
-     those, use supersearchfacet.
+     Given one or more crash ids via command line or stdin (one per line), fetches
+     crash data and puts it in specified directory.
 
-     There are two ways to run this:
+     Crash data is split up into directories: raw_crash/, dump_names/,
+     processed_crash/, and directories with the same name as the dump type.
 
-     First, you can specify Super Search API fields to generate the query.
+     https://antenna.readthedocs.io/en/latest/overview.html#aws-s3-file-hierarchy
 
-     For example:
+     This requires an API token in order to download dumps and protected data.
+     Using an API token also reduces rate-limiting. Set the CRASHSTATS_API_TOKEN
+     environment variable to your API token value:
 
-     $ supersearch --product=Firefox --num=10
-
-     Second, you can pass in a url from a Super Search on Crash Stats. This command
-     will then pull out the filter parameters. You can override those parameters
-     with command line arguments.
-
-     $ supersearch --supersearch-url='https://crash-stats.mozilla.org/search/...'
-
-     Make sure to use single quotes when specifying values so that your shell
-     doesn't expand variables or parse escape sequences.
-
-     You can specify returned fields using the Super Search field "_columns".
-
-     For example:
-
-     $ supersearch --_columns=uuid --_columns=product --_columns=build_id
-
-     Results are tab-delimited by default. You can specify other output formats
-     using "--format". Tabs and newlines in output are escaped.
-
-     For list of available fields and Super Search API documentation, see:
-
-     https://crash-stats.mozilla.org/documentation/supersearch/
-
-     https://crash-stats.mozilla.org/documentation/supersearch/api/
-
-     This requires an API token in order to search and get results for protected
-     data fields. Using an API token also reduces rate-limiting. Set the
-     CRASHSTATS_API_TOKEN environment variable to your API token value:
-
-     CRASHSTATS_API_TOKEN=xyz supersearch ...
+     CRASHSTATS_API_TOKEN=xyz fetch-data crashdata ...
 
      To create an API token for Crash Stats, visit:
 
@@ -374,22 +384,25 @@ fetch-data
      https://crash-stats.mozilla.org/documentation/protected_data_access/
 
    Options:
-     --host TEXT                     host for system to fetch crashids from
-                                     [default: https://crash-stats.mozilla.org]
-     --supersearch-url TEXT          Super Search url to base query on
-     --num TEXT                      number of crash ids you want or "all" for all
-                                     of them  [default: 100]
-     --headers / --no-headers        whether or not to show table headers
-                                     [default: no-headers]
-     --format [table|tab|csv|json|markdown]
-                                     format to print output  [default: tab]
-     --verbose / --no-verbose        whether to print debugging output  [default:
-                                     no-verbose]
-     --color / --no-color            whether or not to colorize output; note that
-                                     color is shut off when stdout is not an
-                                     interactive terminal automatically  [default:
-                                     color]
-     --help                          Show this message and exit.
+     --host TEXT                   host to pull crash data from; this needs to
+                                   match CRASHSTATS_API_TOKEN value  [default:
+                                   https://crash-stats.mozilla.org]
+     --overwrite / --no-overwrite  whether or not to overwrite existing data
+                                   [default: overwrite]
+     --raw / --no-raw              whether or not to save raw crash data  [default:
+                                   raw]
+     --dumps / --no-dumps          whether or not to save dumps  [default: no-
+                                   dumps]
+     --processed / --no-processed  whether or not to save processed crash data
+                                   [default: no-processed]
+     --workers INTEGER RANGE       how many workers to use to download data;
+                                   requires CRASHSTATS_API_TOKEN  [default: 1;
+                                   1<=x<=10]
+     --color / --no-color          whether or not to colorize output; note that
+                                   color is shut off when stdout is not an
+                                   interactive terminal automatically  [default:
+                                   color]
+     --help                        Show this message and exit.
 
 .. [[[end]]]
 
@@ -415,74 +428,35 @@ reprocess
 
 ::
 
-   Usage: supersearch [OPTIONS]
+   Usage: reprocess [OPTIONS] [CRASHIDS]...
 
-     Performs a basic search on Crash Stats using the Super Search API and outputs
-     the results.
+     Sends specified crashes for reprocessing
 
-     A basic search uses filters and can span multiple pages of results. A basic
-     search cannot include facets, aggregations, histograms, or cardinalities. For
-     those, use supersearchfacet.
-
-     There are two ways to run this:
-
-     First, you can specify Super Search API fields to generate the query.
-
-     For example:
-
-     $ supersearch --product=Firefox --num=10
-
-     Second, you can pass in a url from a Super Search on Crash Stats. This command
-     will then pull out the filter parameters. You can override those parameters
-     with command line arguments.
-
-     $ supersearch --supersearch-url='https://crash-stats.mozilla.org/search/...'
-
-     Make sure to use single quotes when specifying values so that your shell
-     doesn't expand variables or parse escape sequences.
-
-     You can specify returned fields using the Super Search field "_columns".
-
-     For example:
-
-     $ supersearch --_columns=uuid --_columns=product --_columns=build_id
-
-     Results are tab-delimited by default. You can specify other output formats
-     using "--format". Tabs and newlines in output are escaped.
-
-     For list of available fields and Super Search API documentation, see:
-
-     https://crash-stats.mozilla.org/documentation/supersearch/
-
-     https://crash-stats.mozilla.org/documentation/supersearch/api/
-
-     This requires an API token in order to search and get results for protected
-     data fields. Using an API token also reduces rate-limiting. Set the
-     CRASHSTATS_API_TOKEN environment variable to your API token value:
-
-     CRASHSTATS_API_TOKEN=xyz supersearch ...
+     This requires CRASHSTATS_API_TOKEN to be set in the environment to a valid API
+     token.
 
      To create an API token for Crash Stats, visit:
 
      https://crash-stats.mozilla.org/api/tokens/
 
-     Remember to abide by the data access policy when using data from Crash Stats!
-     The policy is specified here:
+     Note: If you're processing more than 10,000 crashes, you should use a sleep
+     value that balances the rate of crash ids being added to the queue and the
+     rate of crash ids being processed. For example, you could use "--sleep 10"
+     which will sleep for 10 seconds between submitting groups of crashes.
 
-     https://crash-stats.mozilla.org/documentation/protected_data_access/
+     Also, if you're processing a lot of crashes, you should let us know before you
+     do it.
 
    Options:
-     --host TEXT                     host for system to fetch crashids from
-                                     [default: https://crash-stats.mozilla.org]
-     --supersearch-url TEXT          Super Search url to base query on
-     --num TEXT                      number of crash ids you want or "all" for all
-                                     of them  [default: 100]
-     --headers / --no-headers        whether or not to show table headers
-                                     [default: no-headers]
-     --format [table|tab|csv|json|markdown]
-                                     format to print output  [default: tab]
-     --verbose / --no-verbose        whether to print debugging output  [default:
-                                     no-verbose]
+     --host TEXT                     host for system to reprocess in  [default:
+                                     https://crash-stats.mozilla.org]
+     --sleep INTEGER                 how long in seconds to sleep before submitting
+                                     the next group  [default: 1]
+     --ruleset TEXT                  processor pipeline ruleset to use for
+                                     reprocessing these crash ids
+     --allow-many / --no-allow-many  don't prompt user about letting us know about
+                                     reprocessing more than 10,000 crashes
+                                     [default: no-allow-many]
      --color / --no-color            whether or not to colorize output; note that
                                      color is shut off when stdout is not an
                                      interactive terminal automatically  [default:
