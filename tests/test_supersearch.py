@@ -249,7 +249,6 @@ def test_json():
         args=["--_columns=uuid", "--_columns=signature", "--format=json"],
         env={"COLUMNS": "100"},
     )
-    print(result.output)
     assert result.exit_code == 0
     assert result.output == dedent(
         """\

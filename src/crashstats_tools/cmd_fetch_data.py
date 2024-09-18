@@ -2,11 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from datetime import timedelta
 from functools import partial
 import json
 from multiprocessing import Pool
 import os
 import sys
+import time
 
 import click
 from rich.console import Console
@@ -35,9 +37,10 @@ def fetch_crash(
     fetchraw,
     fetchdumps,
     fetchprocessed,
-    outputdir,
     color,
     overwrite,
+    stats,
+    outputdir,
 ):
     """Fetch crash data and save to correct place on the file system
 
@@ -59,9 +62,11 @@ def fetch_crash(
         # Fetch raw crash metadata to OUTPUTDIR/raw_crash/DATE/CRASHID
         fn = os.path.join(outputdir, "raw_crash", "20" + crash_id[-6:], crash_id)
         if os.path.exists(fn) and not overwrite:
-            console.print(f"{crash_id}: fetching raw crash -- already exists")
+            if not stats:
+                console.print(f"{crash_id}: fetching raw crash -- already exists")
         else:
-            console.print(f"{crash_id}: fetching raw crash")
+            if not stats:
+                console.print(f"{crash_id}: fetching raw crash")
             raw_crash = get_crash_annotations(crash_id, host=host, api_token=api_token)
 
             # Save raw crash to file system
@@ -87,11 +92,13 @@ def fetch_crash(
 
                 fn = os.path.join(outputdir, dump_name, crash_id)
                 if os.path.exists(fn) and not overwrite:
-                    console.print(
-                        f"{crash_id}: fetching dump: {dump_name} -- already exists"
-                    )
+                    if not stats:
+                        console.print(
+                            f"{crash_id}: fetching dump: {dump_name} -- already exists"
+                        )
                 else:
-                    console.print(f"{crash_id}: fetching dump: {dump_name}")
+                    if not stats:
+                        console.print(f"{crash_id}: fetching dump: {dump_name}")
                     dump_content = get_dump(
                         crash_id, dump_name=file_name, api_token=api_token, host=host
                     )
@@ -103,9 +110,11 @@ def fetch_crash(
         # Fetch processed crash data
         fn = os.path.join(outputdir, "processed_crash", crash_id)
         if os.path.exists(fn) and not overwrite:
-            console.print(f"{crash_id}: fetching processed crash -- already exists")
+            if not stats:
+                console.print(f"{crash_id}: fetching processed crash -- already exists")
         else:
-            console.print(f"{crash_id}: fetching processed crash")
+            if not stats:
+                console.print(f"{crash_id}: fetching processed crash")
             processed_crash = get_processed_crash(
                 crash_id, api_token=api_token, host=host
             )
@@ -154,6 +163,14 @@ def fetch_crash(
     help="how many workers to use to download data; requires CRASHSTATS_API_TOKEN",
 )
 @click.option(
+    "--stats/--no-stats",
+    default=False,
+    help=(
+        "prints download stats for large fetch-data jobs; if it's printing download "
+        "stats, it's not printing other things"
+    ),
+)
+@click.option(
     "--color/--no-color",
     default=True,
     help=(
@@ -172,6 +189,7 @@ def fetch_data(
     fetchdumps,
     fetchprocessed,
     workers,
+    stats,
     color,
     outputdir,
     crash_ids,
@@ -259,17 +277,44 @@ def fetch_data(
         fetchdumps=fetchdumps,
         fetchprocessed=fetchprocessed,
         color=color,
-        outputdir=outputdir,
         overwrite=overwrite,
+        stats=stats,
+        outputdir=outputdir,
     )
 
+    start_time = time.time()
+    total = len(crash_ids)
+    i = 0
+
     if workers > 1:
-        with Pool(workers) as p:
-            p.map(fetch_crash_partial, crash_ids)
+        with Pool(workers) as pool:
+            for _ in pool.imap(fetch_crash_partial, crash_ids):
+                if stats:
+                    # Print something every 100
+                    if i % 100 == 0:
+                        seconds_per_item = (time.time() - start_time) / (i + 1)
+                        estimate_left = str(
+                            timedelta(seconds=seconds_per_item * (total - i + 1))
+                        )
+                        console.print(
+                            (f"Downloaded ({i}/{total}) {estimate_left}").strip()
+                        )
+                    i += 1
 
     else:
         for crash_id in crash_ids:
             fetch_crash_partial(crash_id)
+            if stats:
+                if i % 100 == 0:
+                    seconds_per_item = (time.time() - start_time) / (i + 1)
+                    estimate_left = str(
+                        timedelta(seconds=int(seconds_per_item * (total - i + 1)))
+                    )
+                    console.print((f"Downloaded ({i}/{total}) {estimate_left}").strip())
+                i += 1
+
+    total_time = timedelta(seconds=int(time.time() - start_time))
+    console.print(f"Completed in {total_time}.")
 
 
 if __name__ == "__main__":

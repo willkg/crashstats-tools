@@ -61,6 +61,7 @@ def test_fetch_raw(tmpdir):
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(
@@ -110,6 +111,7 @@ def test_fetch_raw_with_token(tmpdir):
         """\
         Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(
@@ -236,6 +238,7 @@ def test_fetch_dumps(tmpdir):
         Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching dump: upload_file_minidump
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(
@@ -283,6 +286,7 @@ def test_fetch_processed(tmpdir):
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(tmpdir / "processed_crash" / crash_id).read_bytes()
@@ -329,6 +333,7 @@ def test_fetch_processed_with_token(tmpdir):
         """\
         Using API token: 935exxxxxxxxxxxxxxxxxxxxxxxxxxxx
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching processed crash
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(tmpdir / "processed_crash" / crash_id).read_bytes()
@@ -379,9 +384,58 @@ def test_host(tmpdir):
         No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
         Skipping dumps and protected data.
         2ac9a763-83d2-4dca-89bb-091bd0220630: fetching raw crash
+        Completed in 0:00:00.
         """
     )
     data = pathlib.Path(
         tmpdir / "raw_crash" / f"20{crash_id[-6:]}" / crash_id
     ).read_bytes()
     assert json.loads(data) == raw_crash
+
+
+@responses.activate
+def test_stats(tmpdir):
+    crash_id = "2ac9a763-83d2-4dca-89bb-091bd0220630"
+    raw_crash = {
+        "ProductName": "Firefox",
+        "Version": "100.0",
+    }
+
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/RawCrash/",
+        match=[
+            responses.matchers.query_param_matcher(
+                {
+                    "crash_id": crash_id,
+                    "format": "meta",
+                }
+            )
+        ],
+        status=200,
+        json=raw_crash,
+    )
+
+    runner = CliRunner()
+    args = [
+        "--raw",
+        "--no-dumps",
+        "--no-processed",
+        "--stats",
+        str(tmpdir),
+        crash_id,
+    ]
+    result = runner.invoke(
+        cli=cmd_fetch_data.fetch_data,
+        args=args,
+        env={"COLUMNS": "100"},
+    )
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        No API token provided. Set CRASHSTATS_API_TOKEN in the environment.
+        Skipping dumps and protected data.
+        Downloaded (0/1) 0:00:00
+        Completed in 0:00:00.
+        """
+    )
