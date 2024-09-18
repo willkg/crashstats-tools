@@ -412,7 +412,6 @@ def test_supersearch_url():
         ],
         env={"COLUMNS": "100"},
     )
-    print(result.output)
     assert result.exit_code == 0
     assert result.output == dedent(
         """\

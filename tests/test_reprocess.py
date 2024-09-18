@@ -284,7 +284,6 @@ def test_reprocess_tenthousand_allowmany():
         """
         )
     )
-    print(result.output.splitlines()[-3:])
     assert result.output.endswith(
         dedent(
             f"""\
