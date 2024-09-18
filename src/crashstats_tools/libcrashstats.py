@@ -112,7 +112,7 @@ def supersearch_return_query(
     """Performs search with _return_query parameter and returns elasticsearch query
 
     :arg dict params: dict of super search parameters to base the query on
-    :arg varies num: number of results to get or INFINITY
+    :arg varies num_results: number of results to get or INFINITY
     :arg str host: the host to query
     :arg str api_token: the API token to use or None
     :arg varies logger: logger to use for printing what it's doing
