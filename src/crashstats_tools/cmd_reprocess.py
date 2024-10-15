@@ -8,6 +8,7 @@ import sys
 import time
 
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 from more_itertools import chunked
 
@@ -58,9 +59,14 @@ SLEEP_DEFAULT = 1
         "when stdout is not an interactive terminal automatically"
     ),
 )
+@click.option(
+    "--dotenv/--no-dotenv",
+    default=False,
+    help="whether or not to load a .env file for environment variables",
+)
 @click.argument("crashids", nargs=-1)
 @click.pass_context
-def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
+def reprocess(ctx, host, sleep, ruleset, allow_many, color, dotenv, crashids):
     """
     Sends specified crashes for reprocessing
 
@@ -79,6 +85,9 @@ def reprocess(ctx, host, sleep, ruleset, allow_many, color, crashids):
     Also, if you're processing a lot of crashes, you should let us know before
     you do it.
     """
+    if dotenv:
+        load_dotenv()
+
     host = host.rstrip("/")
 
     if not color:
