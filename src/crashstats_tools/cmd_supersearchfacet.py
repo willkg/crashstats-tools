@@ -503,12 +503,30 @@ def supersearchfacet(
     if verbose:
         console.print(f"Params: {params}")
 
+    if "_return_query" in params:
+        if not api_token:
+            console.print(
+                "[red]No API token provided, so _return_query cannot be used.[/red]"
+            )
+            ctx.exit(1)
+
+        query = supersearch_facet(
+            params=params,
+            api_token=api_token,
+            host=host,
+            logger=ConsoleLogger(console) if verbose else None,
+        )
+
+        console.print(query)
+        return
+
     facet_data_payload = supersearch_facet(
         params=params,
         api_token=api_token,
         host=host,
         logger=ConsoleLogger(console) if verbose else None,
     )
+
     if (
         "signature" not in params["_facets"]
         and "signature" in facet_data_payload["facets"]
