@@ -213,6 +213,52 @@ def fix_value(value, denote_weekends=False):
     return value
 
 
+def print_table(console, format_type, denote_weekends, facet_name, records):
+    if isinstance(records, dict):
+        for sub_facet_name, sub_records in records.items():
+            print_table(
+                console=console,
+                format_type=format_type,
+                denote_weekends=denote_weekends,
+                facet_name=facet_name + [sub_facet_name],
+                records=sub_records,
+            )
+        return
+
+    # Grab the first record keys, take out the facet_name, sort, and then
+    # add the facet_name first
+    headers = list(records[0].keys())
+    headers.remove(facet_name[0])
+    headers = [facet_name[0]] + sorted(headers, key=thing_to_key)
+
+    records = [
+        {key: fix_value(val, denote_weekends) for key, val in record.items()}
+        for record in records
+    ]
+
+    console.print(".".join(facet_name))
+    if format_type == "table":
+        table = Table(show_edge=False, box=box.MARKDOWN)
+        for column in headers:
+            table.add_column(column, justify="left")
+
+        for record in records:
+            table.add_row(*[record[header] for header in headers])
+        console.print(table)
+
+    elif format_type == "csv":
+        for line in tableize_csv(headers=headers, data=records):
+            console.file.write(line + "\n")
+
+    elif format_type == "tab":
+        for line in tableize_tab(headers=headers, data=records):
+            console.file.write(line + "\n")
+
+    elif format_type == "markdown":
+        for line in tableize_markdown(headers=headers, data=records):
+            console.file.write(line + "\n")
+
+
 @click.command(
     context_settings={
         "show_default": True,
@@ -536,52 +582,6 @@ def supersearchfacet(
         console_err.print(f"Params sent: {params}")
         console_err.print(f"Output returned: {facet_data_payload}")
         ctx.exit(1)
-
-
-def print_table(console, format_type, denote_weekends, facet_name, records):
-    if isinstance(records, dict):
-        for sub_facet_name, sub_records in records.items():
-            print_table(
-                console=console,
-                format_type=format_type,
-                denote_weekends=denote_weekends,
-                facet_name=facet_name + [sub_facet_name],
-                records=sub_records,
-            )
-        return
-
-    # Grab the first record keys, take out the facet_name, sort, and then
-    # add the facet_name first
-    headers = list(records[0].keys())
-    headers.remove(facet_name[0])
-    headers = [facet_name[0]] + sorted(headers, key=thing_to_key)
-
-    records = [
-        {key: fix_value(val, denote_weekends) for key, val in record.items()}
-        for record in records
-    ]
-
-    console.print(".".join(facet_name))
-    if format_type == "table":
-        table = Table(show_edge=False, box=box.MARKDOWN)
-        for column in headers:
-            table.add_column(column, justify="left")
-
-        for record in records:
-            table.add_row(*[record[header] for header in headers])
-        console.print(table)
-
-    elif format_type == "csv":
-        for line in tableize_csv(headers=headers, data=records):
-            console.file.write(line + "\n")
-
-    elif format_type == "tab":
-        for line in tableize_tab(headers=headers, data=records):
-            console.file.write(line + "\n")
-
-    elif format_type == "markdown":
-        for line in tableize_markdown(headers=headers, data=records):
-            console.file.write(line + "\n")
 
 
 if __name__ == "__main__":
