@@ -28,4 +28,4 @@ test:  ## Run tests
 
 .PHONY: docs
 docs:  ## Update README with fresh cog output
-	cog -r README.rst
+	tox exec -e py38-lint -- cog -r README.rst
