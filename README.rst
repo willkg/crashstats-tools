@@ -79,11 +79,12 @@ supersearch
      Performs a basic search on Crash Stats using the Super Search API and outputs
      the results.
 
-     A basic search uses filters and can span multiple pages of results. A basic
-     search cannot include facets, aggregations, histograms, or cardinalities. For
-     those, use supersearchfacet.
+     A basic search uses filters and can span multiple pages of results.
 
-     There are two ways to run this:
+     If you want to use facets, aggregations, histograms, or cardinatlities, use
+     supersearchfacet.
+
+     There are two ways to supersearch:
 
      First, you can specify Super Search API fields to generate the query.
 
@@ -99,6 +100,14 @@ supersearch
 
      Make sure to use single quotes when specifying values so that your shell
      doesn't expand variables or parse escape sequences.
+
+     By default, supersearch looks at crash report data for the last week. You can
+     specify start and end date filters to change the window of crash reports you
+     want to look at.
+
+     For example:
+
+     $ supersearch --date='>=2024-10-01' --date='<2024-10-15'
 
      You can specify returned fields using the Super Search field "_columns".
 
@@ -398,6 +407,9 @@ fetch-data
      --workers INTEGER RANGE       how many workers to use to download data;
                                    requires CRASHSTATS_API_TOKEN  [default: 1;
                                    1<=x<=10]
+     --stats / --no-stats          prints download stats for large fetch-data jobs;
+                                   if it's printing download stats, it's not
+                                   printing other things  [default: no-stats]
      --color / --no-color          whether or not to colorize output; note that
                                    color is shut off when stdout is not an
                                    interactive terminal automatically  [default:

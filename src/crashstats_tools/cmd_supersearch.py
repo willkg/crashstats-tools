@@ -96,11 +96,12 @@ def supersearch_cli(
     Performs a basic search on Crash Stats using the Super Search API and
     outputs the results.
 
-    A basic search uses filters and can span multiple pages of results. A basic
-    search cannot include facets, aggregations, histograms, or cardinalities.
-    For those, use supersearchfacet.
+    A basic search uses filters and can span multiple pages of results.
 
-    There are two ways to run this:
+    If you want to use facets, aggregations, histograms, or cardinatlities, use
+    supersearchfacet.
+
+    There are two ways to supersearch:
 
     First, you can specify Super Search API fields to generate the query.
 
@@ -116,6 +117,15 @@ def supersearch_cli(
 
     Make sure to use single quotes when specifying values so that your shell
     doesn't expand variables or parse escape sequences.
+
+    By default, supersearch looks at crash report data for the last week. You
+    can specify start and end date filters to change the window of crash reports
+    you want to look at.
+
+    For example:
+
+    \b
+    $ supersearch --date='>=2024-10-01' --date='<2024-10-15'
 
     You can specify returned fields using the Super Search field "_columns".
 
