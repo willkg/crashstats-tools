@@ -11,6 +11,7 @@ import sys
 import time
 
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 
 from crashstats_tools.libcrashstats import (
@@ -178,6 +179,11 @@ def fetch_crash(
         "when stdout is not an interactive terminal automatically"
     ),
 )
+@click.option(
+    "--dotenv/--no-dotenv",
+    default=False,
+    help="whether or not to load a .env file for environment variables",
+)
 @click.argument("outputdir")
 @click.argument("crash_ids", nargs=-1)
 @click.pass_context
@@ -191,6 +197,7 @@ def fetch_data(
     workers,
     stats,
     color,
+    dotenv,
     outputdir,
     crash_ids,
 ):
@@ -220,6 +227,9 @@ def fetch_data(
 
     https://crash-stats.mozilla.org/documentation/protected_data_access/
     """
+    if dotenv:
+        load_dotenv()
+
     if not color:
         console = Console(color_system=None)
     else:

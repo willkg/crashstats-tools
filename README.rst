@@ -155,6 +155,8 @@ supersearch
                                      color is shut off when stdout is not an
                                      interactive terminal automatically  [default:
                                      color]
+     --dotenv / --no-dotenv          whether or not to load a .env file for
+                                     environment variables  [default: no-dotenv]
      --help                          Show this message and exit.
 
 .. [[[end]]]
@@ -319,6 +321,8 @@ supersearchfacet
                                      Calculates the leftover that is the difference
                                      between the total minus the sum of all term
                                      counts  [default: no-leftover-count]
+     --dotenv / --no-dotenv          whether or not to load a .env file for
+                                     environment variables  [default: no-dotenv]
      --help                          Show this message and exit.
 
 .. [[[end]]]
@@ -414,6 +418,8 @@ fetch-data
                                    color is shut off when stdout is not an
                                    interactive terminal automatically  [default:
                                    color]
+     --dotenv / --no-dotenv        whether or not to load a .env file for
+                                   environment variables  [default: no-dotenv]
      --help                        Show this message and exit.
 
 .. [[[end]]]
@@ -473,6 +479,8 @@ reprocess
                                      color is shut off when stdout is not an
                                      interactive terminal automatically  [default:
                                      color]
+     --dotenv / --no-dotenv          whether or not to load a .env file for
+                                     environment variables  [default: no-dotenv]
      --help                          Show this message and exit.
 
 .. [[[end]]]

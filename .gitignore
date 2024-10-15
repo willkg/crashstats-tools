@@ -5,6 +5,7 @@ __pycache__
 dist
 build
 .cache
+.env
 .pytest_cache
 .tox
 .python-version

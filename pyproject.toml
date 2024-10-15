@@ -10,6 +10,7 @@ requires-python = ">=3.8"
 dependencies = [
     "click",
     "more_itertools",
+    "python-dotenv",
     "requests",
     "rich",
     "tomli>=1.1.0; python_version < '3.11'",

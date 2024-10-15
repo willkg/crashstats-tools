@@ -8,6 +8,7 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
@@ -88,9 +89,22 @@ def extract_supersearch_params(url):
         "when stdout is not an interactive terminal automatically"
     ),
 )
+@click.option(
+    "--dotenv/--no-dotenv",
+    default=False,
+    help="whether or not to load a .env file for environment variables",
+)
 @click.pass_context
 def supersearch_cli(
-    ctx, host, supersearch_url, num, headers, format_type, verbose, color
+    ctx,
+    host,
+    supersearch_url,
+    num,
+    headers,
+    format_type,
+    verbose,
+    color,
+    dotenv,
 ):
     """
     Performs a basic search on Crash Stats using the Super Search API and
@@ -159,6 +173,9 @@ def supersearch_cli(
     https://crash-stats.mozilla.org/documentation/protected_data_access/
 
     """
+    if dotenv:
+        load_dotenv()
+
     host = host.rstrip("/")
 
     if not color:

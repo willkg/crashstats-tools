@@ -9,6 +9,7 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 import click
+from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -281,6 +282,11 @@ def fix_value(value, denote_weekends=False):
         + "minus the sum of all term counts"
     ),
 )
+@click.option(
+    "--dotenv/--no-dotenv",
+    default=False,
+    help="whether or not to load a .env file for environment variables",
+)
 @click.pass_context
 def supersearchfacet(
     ctx,
@@ -294,6 +300,7 @@ def supersearchfacet(
     color,
     denote_weekends,
     leftover_count,
+    dotenv,
 ):
     """Fetches facet data from Crash Stats using Super Search
 
@@ -378,6 +385,9 @@ def supersearchfacet(
     https://crash-stats.mozilla.org/documentation/protected_data_access/
 
     """
+    if dotenv:
+        load_dotenv()
+
     host = host.rstrip("/")
 
     today = datetime.datetime.now()
