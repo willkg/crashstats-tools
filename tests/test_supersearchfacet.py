@@ -1267,3 +1267,135 @@ def test_json():
         }
         """
     )
+
+
+@freezegun.freeze_time("2024-10-15 13:02:00")
+@responses.activate
+def test_return_query():
+    # This makes sure that passing in _retury_query=1 works
+    api_token = "935e136cdfe14b83abae0e0cd97b634f"
+    query_data = {
+        "query": {
+            "query": {
+                "filtered": {
+                    "query": {"match_all": {}},
+                    "filter": {
+                        "bool": {
+                            "must": [
+                                {
+                                    "bool": {
+                                        "must": [
+                                            {
+                                                "range": {
+                                                    "processed_crash.date_processed": {
+                                                        "lt": "2024-10-15T23:59:59+00:00"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "range": {
+                                                    "processed_crash.date_processed": {
+                                                        "gte": "2024-10-08T00:00:00+00:00"
+                                                    }
+                                                }
+                                            },
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                }
+            },
+            "aggs": {
+                "signature": {
+                    "terms": {"field": "processed_crash.signature.full", "size": 50}
+                }
+            },
+            "from": 0,
+            "size": 0,
+            "fields": [
+                "processed_crash.uuid",
+                "processed_crash.date_processed",
+                "processed_crash.signature",
+                "processed_crash.product",
+                "processed_crash.version",
+            ],
+        },
+        "indices": ["socorro202441", "socorro202442"],
+    }
+
+    responses.add(
+        responses.GET,
+        DEFAULT_HOST + "/api/SuperSearch/",
+        match=[
+            responses.matchers.header_matcher({"Auth-Token": api_token}),
+            responses.matchers.query_param_matcher(
+                {
+                    "date": [">=2024-10-08 00:00:00", "<2024-10-15 23:59:59"],
+                    "_return_query": "1",
+                    "_results_number": "0",
+                }
+            ),
+        ],
+        status=200,
+        json=query_data,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        cli=cmd_supersearchfacet.supersearchfacet,
+        args=["--_return_query=1"],
+        env={"CRASHSTATS_API_TOKEN": api_token, "COLUMNS": "100"},
+    )
+    assert result.exit_code == 0
+    assert result.output == dedent(
+        """\
+        {
+            'query': {
+                'query': {
+                    'filtered': {
+                        'query': {'match_all': {}},
+                        'filter': {
+                            'bool': {
+                                'must': [
+                                    {
+                                        'bool': {
+                                            'must': [
+                                                {
+                                                    'range': {
+                                                        'processed_crash.date_processed': {
+                                                            'lt': '2024-10-15T23:59:59+00:00'
+                                                        }
+                                                    }
+                                                },
+                                                {
+                                                    'range': {
+                                                        'processed_crash.date_processed': {
+                                                            'gte': '2024-10-08T00:00:00+00:00'
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                'aggs': {'signature': {'terms': {'field': 'processed_crash.signature.full', 'size': 50}}},
+                'from': 0,
+                'size': 0,
+                'fields': [
+                    'processed_crash.uuid',
+                    'processed_crash.date_processed',
+                    'processed_crash.signature',
+                    'processed_crash.product',
+                    'processed_crash.version'
+                ]
+            },
+            'indices': ['socorro202441', 'socorro202442']
+        }
+        """
+    )
