@@ -29,9 +29,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-urls.Homepage = "https://github.com/willkg/crashstats-tools"
-urls.Source = "https://github.com/willkg/crashstats-tools"
-urls.Issues = "https://github.com/willkg/crashstats-tools"
+urls.Homepage = "https://github.com/mozilla-services/crashstats-tools"
+urls.Source = "https://github.com/mozilla-services/crashstats-tools"
+urls.Issues = "https://github.com/mozilla-services/crashstats-tools"
 
 [project.scripts]
 fetch-data = "crashstats_tools.cmd_fetch_data:fetch_data"

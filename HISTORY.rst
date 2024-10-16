@@ -2,6 +2,14 @@
 History
 =======
 
+2.1.0 (in development)
+======================
+
+Changes:
+
+* Transfered repository from willkg to mozilla-services.
+
+
 2.0.0 (April 12th, 2024)
 ========================
 

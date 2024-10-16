@@ -5,13 +5,13 @@ crashstats-tools
 Command line tools and library for interacting with Crash Stats
 (`<https://crash-stats.mozilla.org/>`_).
 
-:Code: https://github.com/willkg/crashstats-tools
+:Code: https://github.com/mozilla-services/crashstats-tools
 :Documentation: Check the ``README.rst`` file
 :Changelog: Check the ``HISTORY.rst`` file
-:Issue tracker: https://github.com/willkg/crashstats-tools/issues
+:Issue tracker: https://github.com/mozilla-services/crashstats-tools/issues
 :License: MPLv2
 :Chat: `#crashreporting matrix channel <https://chat.mozilla.org/#/room/#crashreporting:mozilla.org>`__
-:Community Participation Guidelines: `<https://github.com/willkg/crashstats-tools/blob/main/CODE_OF_CONDUCT.md>`_
+:Community Participation Guidelines: `<https://github.com/mozilla-services/crashstats-tools/blob/main/CODE_OF_CONDUCT.md>`_
 
 
 Installing
@@ -27,23 +27,6 @@ For developing crashstats-tools, clone the Git repository, create a virtual
 environment, and install crashstats-tools and dev dependencies with::
 
     $ pip install -e '.[dev]'
-
-
-Support
-=======
-
-This is a project that I spent some time on because it seemed helpful to me
-and others. I use it regularly for Crash Stats investigations and reprocessing.
-However, I'm not you! If you have any problems, please write up an issue in the
-issue tracker and I'll get to it when I'm able.
-
-If you use this, like it, appreciate it, or have any positive feeling, please
-give it a GitHub star. That helps me:
-
-1. have a proxy for knowing whether it's being used
-2. prioritize my time working on this project
-3. have a hand-wavey list of users in case I have questions and need to ask
-   for advice
 
 
 Tools
