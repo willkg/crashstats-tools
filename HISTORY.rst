@@ -8,6 +8,7 @@ History
 Changes:
 
 * Transfered repository from willkg to mozilla-services.
+* Drop support for Python 3.8. (#158)
 
 
 2.0.0 (April 12th, 2024)
